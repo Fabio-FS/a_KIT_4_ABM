@@ -38,9 +38,9 @@ def run_sim(P_layer, P_dynamic, P_simulations, P_recordings):
     list_of_rules = imprint_rules(G, P_dynamic)
     
     #print("The graph is now completed. now running the simulations...")
-    RES = run_temporal_evolution(G, list_of_rules, P_simulations, P_recordings)
+    run_temporal_evolution(G, list_of_rules, P_simulations, P_recordings)
 
-    return RES
+    return P_recordings
 
 #  ██ ███    ██ ██ ████████                     ███    ██ ███████ ████████ 
 #  ██ ████   ██ ██    ██                        ████   ██ ██         ██    
@@ -115,7 +115,7 @@ def run_temporal_evolution(G, list_of_rules, P_simulations, P_recordings):
     # L_REC is the list of recordings to be done DURING the simulations
     # L_REC_1 is the list of recordings to be done AFTER the simulations end
 
-    L_REC_0, L_REC, L_REC_1 = init_recordings(P_recordings)
+    L_REC_0, L_REC, L_REC_1 = init_recordings(P_recordings, P_simulations["T"])
 
     # save the state of the system BEFORE the simulations begin
     for record0 in L_REC_0:
@@ -137,38 +137,6 @@ def run_temporal_evolution(G, list_of_rules, P_simulations, P_recordings):
     for record1 in L_REC_1:
         single_save(G, record1, -1)     # -1 means that the time step is after the simulations end
 
-
-
-
-
-    #open_recordings(P_recordings,init = ' ')       # prints [ in the beginning of each file to make it easier to read the data
-
-    # save the state of the system BEFORE the simulations begin
-    #for i in L_REC_0:
-        
-    #    single_save(G, i)
-
-    # run the simulations
-    #for i in range(P_simulations["T"]):
-        #print ("Time step: " + str(i) + "/" + str(P_simulations["T"]))
-
-        # for each time step i, run the simulation
-    #    for j in range(len(list_of_rules)):
-            # for each rule j, run the rule on the corresponding layer
-    #        single_update(G, list_of_rules[j], list_of_layers[j])
-
-        # save the state of the system
-        #for j in L_REC:
-        #    if(i%j["DT"] == 0):
-
-                # if the time step is a multiple of the recording time step, save the recording
-        #        single_save(G, j)
-
-    # save the state of the system AFTER the simulations end
-    #for i in L_REC_1:
-    #    single_save(G, i)
-
-    #close_recordings(P_recordings, end = " ")     # prints ] in the end of each file to make it easier to read the data, and starts a new line
 
 
 

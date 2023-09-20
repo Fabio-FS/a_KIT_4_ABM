@@ -16,7 +16,7 @@ import h5py
 #  ██   ██ ███████  ██████  ██████  ██   ██ ██████  ██ ██   ████  ██████  ███████ 
 
 
-def init_recordings(P_recordings):
+def init_recordings(P_recordings, T_max):
 
     # initialize the recordings
     L_REC_0 = []                        # list of recordings at the beginning of the simulation
@@ -26,6 +26,8 @@ def init_recordings(P_recordings):
     for i in range(P_recordings["N"]):
         # for each recording i, read the parameters and initialize the recording
         P_rec_i = P_recordings["Recording_" + str(i)]
+        # for each of recording, I calculate how often it appears:
+        count = 0
 
         if "BEGIN" not in P_rec_i:
             # if BEGIN is not specified, set it to False
@@ -36,13 +38,22 @@ def init_recordings(P_recordings):
         if "DT" not in P_rec_i:
             # if DT is not specified, set it to 0
             P_rec_i["DT"] = 0
+            # I add to count the number of times 1:DT:T_max is divisible by DT
+
+        
 
         if(P_rec_i["BEGIN"] == "True"):
             L_REC_0.append(P_rec_i)
+            count += 1
         if(P_rec_i["END"] == "True"):
             L_REC_1.append(P_rec_i)
+            count += 1
         if(P_rec_i["DT"] > 0):
             L_REC.append(P_rec_i)
+            count += int(T_max/P_rec_i["DT"])
+        if count > 0:
+            P_rec_i["DATA"] = np.empty(count, dtype=object)
+            P_rec_i["count"] = 0
 
     return L_REC_0, L_REC, L_REC_1      # list of recordings at the beginning of the simulation, during the simulation, and at the end of the simulation
 
@@ -64,18 +75,15 @@ def single_save(G, P_rec, tick, Delta_T = -10):
 def save_in_dict(temp, key, value):
     if key in temp:
     # if it exists, check if "X" is a list
-        if isinstance(temp[key], list):
-            # if it is a list, append the values
-            temp[key].append(value)
-        # if it is a vector, append the values
-        elif isinstance(temp[key], np.ndarray):
-            temp[key] = np.append(temp[key], value)
+        if isinstance(temp[key], np.ndarray):
+            temp[key][temp["count"]] = value
+            temp["count"] += 1
         # if it is a scalar, change it to a list and append the values
         else:
-            temp[key] = [temp[key], value]
+            print("something went wrong! the key " + key + " is not a nparray")
     # if the key "X" does not exist, create it and append the values
     else:
-        temp[key] = value
+        print("something went wrong! the key " + key + " does not exist in the dictionary")
 
 
 
@@ -127,10 +135,7 @@ def save_graph(G,P_rec):
     save_in_dict(P_rec, "DATA", RES)
 
 def fr_local(g, name, value):
-    # returns the fraction of neighbors with the same value
-    # g is the graph
-    # name is the name of the attribute
-    # value is the value of the attribute
+    # returns the fraction of neighbors with the same value  g is the graph  name is the name of the attribute  value is the value of the attribute
     # for each node, get the list of neighbors, and the fraction of neighbors with value = value, and store it in a list called RES
 
     RES = []
@@ -144,12 +149,18 @@ def fr_local(g, name, value):
 
 saving_dictionary = {
     "ALL" : save_ALL,
+    "avg" : save_mean,
     "mean" : save_mean,
     "median" : save_median,
     "var" : save_var,
+    "variance" : save_var,
     "max" : save_max,
+    "maximum" : save_max,
     "min" : save_min,
+    "minimum" : save_min,
     "frac" : save_frac,
+    "fraction" : save_frac,
+    "hist" : save_histogram,
     "histogram" : save_histogram,
     "homophily" : save_homophily,
     "fr_local" : save_fr_local,
@@ -165,6 +176,7 @@ saving_dictionary = {
 
 
 def save_scalar(name, i, n_trials, key, value):
+    print("this should not be used... only np arrays?")
     with h5py.File(name, 'a') as f:
         if np.isscalar(value):
             if key in f.keys():
@@ -187,12 +199,11 @@ def save_array(name, i, key, value):
     return None
 
 
-def save_all(i, n_trials, name, **kwargs):
+def save_all(i, name_file, **kwargs):
     for key, value in kwargs.items():
-        if isinstance(value, np.ndarray):
-            save_array(name, i, key, value)
-        elif np.isscalar(value):
-            save_scalar(name, i, n_trials, key, value)
+        print(key, value)
+        save_array(name_file, i, key, value)
+
 
 
 

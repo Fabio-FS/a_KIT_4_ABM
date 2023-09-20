@@ -1,17 +1,9 @@
 {
-    "P_simulations" : {
-        "T"         : 400
-        },
+    "P_simulations" : {"T" : 40},
     "P_layer" : {
         "N_layers" : 1,
-        "N_nodes" : 10000,
-        "Layer_0" : {
-            "type"  : "WS",
-            "D"      : 2,
-            "L"     : 100,
-            "NFN"   : 4,
-            "P"     : 0.02                 
-        }
+        "N_nodes" : 100,
+        "Layer_0" : { "type"  : "WS", "D" : 2, "L" : 10, "NFN" : 4, "P" : 0.02}
     },
     "P_dynamic" : {
         "N" : 1,
