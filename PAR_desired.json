@@ -1,0 +1,55 @@
+{
+    "P_simulations" : {
+        "T"         : 400
+        },
+    "P_layer" : {
+        "N_layers" : 1,
+        "N_nodes" : 40000,
+        "Layer_0" : {
+            "type"  : "WS",
+            "D"      : 2,
+            "L"     : 200,
+            "NFN"   : 4,
+            "P"     : 0.02                 
+        }
+    },
+    "P_dynamic" : {
+        "N" : 1,
+        "Dynamic_0" :{
+            "func" : "SIRB_beta",
+            "S2I_l" : 0,
+            "S2I_h" : 0.2,
+            "I2R"   : 0.1,
+            "HEALTH" : {"name" : "health_status", "layer" : 0, "IC" : {"type" : "random", "N_pat_zero" : 1}},
+            "BEHAVIOR" : {"name" : "behavior_status", "layer" : 0, "static" : "True", "IC" :   { "type" : "random_beta", "alpha" : 0.1,
+                                                                                "homophily" : {"Flag" :"False"}}                                                                            }
+        }
+    },
+    "P_recordings" :{
+        "N" : 3,
+        "note" : "the default is to save nothing, and the file name is 'none.txt' and it will be empty, default DT = 0, which means not to save anything runtime",
+        "filename"      : "SIRB_beta_0_02_01_h_0_betasymm_01.txt",
+        "Recording_0"   : {
+            "END"               : "True",
+            "func"              : "frac",
+            "target_fraction"   : 3,
+            "layer"             : 0,
+            "target"            : "health_status",
+            "name"              : "R"
+        },
+        "Recording_1" : {
+            "END"               : "True",
+            "func"              : "homophily",
+            "layer"             : 0,
+            "target"            : "behavior_status",
+            "name"              : "H"
+        },
+        "Recording_2" : {
+            "END"               : "True",
+            "func"              : "variance",
+            "layer"             : 0,
+            "target"            : "behavior_status",
+            "name"              : "V"
+        }
+    }
+}
