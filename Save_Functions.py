@@ -26,6 +26,17 @@ def init_recordings(P_recordings):
     for i in range(P_recordings["N"]):
         # for each recording i, read the parameters and initialize the recording
         P_rec_i = P_recordings["Recording_" + str(i)]
+
+        if "BEGIN" not in P_rec_i:
+            # if BEGIN is not specified, set it to False
+            P_rec_i["BEGIN"] = "False"
+        if "END" not in P_rec_i:
+            # if END is not specified, set it to False
+            P_rec_i["END"] = "False"
+        if "DT" not in P_rec_i:
+            # if DT is not specified, set it to 0
+            P_rec_i["DT"] = 0
+
         if(P_rec_i["BEGIN"] == "True"):
             L_REC_0.append(P_rec_i)
         if(P_rec_i["END"] == "True"):

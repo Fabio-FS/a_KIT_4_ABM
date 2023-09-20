@@ -4,11 +4,11 @@
         },
     "P_layer" : {
         "N_layers" : 1,
-        "N_nodes" : 40000,
+        "N_nodes" : 10000,
         "Layer_0" : {
             "type"  : "WS",
             "D"      : 2,
-            "L"     : 200,
+            "L"     : 100,
             "NFN"   : 4,
             "P"     : 0.02                 
         }
