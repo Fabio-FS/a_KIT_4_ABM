@@ -20,7 +20,7 @@
     "P_recordings" :{
         "N" : 3,
         "note" : "the default is to save nothing, and the file name is 'none.txt' and it will be empty, default DT = 0, which means not to save anything runtime",
-        "filename"      : "SIRB_beta_0_02_01_h_0_betasymm_01.txt",
+        "filename"      : "SIRB_beta_0_02_01_h_0_betasymm_01.h5",
         "Recording_0"   : {
             "END"               : "True",
             "func"              : "frac",

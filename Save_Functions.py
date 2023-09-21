@@ -167,24 +167,16 @@ saving_dictionary = {
     "graph" : save_graph
 }
 
-
-
-
-
-
-
-
-
 def save_scalar(name, i, n_trials, key, value):
-    print("this should not be used... only np arrays?")
+    #print("this should not be used... only np arrays?")
+    #print("key: " + key + " value: " + str(value))
     with h5py.File(name, 'a') as f:
-        if np.isscalar(value):
-            if key in f.keys():
-                f[key][i] = value
-            else:
-                temp = np.zeros(n_trials)
-                temp[i] = value
-                f.create_dataset(key, data=temp)
+        if key in f.keys():
+            f[key][i] = value
+        else:
+            temp = np.zeros(n_trials)
+            temp[i] = value
+            f.create_dataset(key, data=temp)
     return None
 
 def save_array(name, i, key, value):
@@ -199,13 +191,34 @@ def save_array(name, i, key, value):
     return None
 
 
-def save_all(i, name_file, **kwargs):
-    for key, value in kwargs.items():
-        print(key, value)
-        save_array(name_file, i, key, value)
+def save_all(i, n_trials, P_rec):
+    
+    filename = P_rec["filename"]
+
+    for i in range(P_rec["N"]):
+        # for each recording i, read the parameters and initialize the recording
+        P_rec_i = P_rec["Recording_" + str(i)]
+        name = P_rec_i["name"]
+        value = P_rec_i["DATA"]
+        print("saving " + name)
+        print("value: " + str(value))
+        if(len(value)>1):
+            print("saving " + name)
+            print(value.shape)
+            print(value)
+            save_array(filename, i, name, value)
+        else:
+            print("saving scalar" + name)
+            print(value.shape)
+            print(value)
+            save_scalar(filename, i, n_trials, name, value)
 
 
-
+def tell_me_what_is_saved(name):
+    with h5py.File(name, 'r') as f:
+        for key in f.keys():
+            print(key, f[key].shape)
+    return None
 
 def load_array(name, key):
     """

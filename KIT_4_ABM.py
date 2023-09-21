@@ -40,8 +40,6 @@ def run_sim(P_layer, P_dynamic, P_simulations, P_recordings):
     #print("The graph is now completed. now running the simulations...")
     run_temporal_evolution(G, list_of_rules, P_simulations, P_recordings)
 
-    return P_recordings
-
 #  ██ ███    ██ ██ ████████                     ███    ██ ███████ ████████ 
 #  ██ ████   ██ ██    ██                        ████   ██ ██         ██    
 #  ██ ██ ██  ██ ██    ██        █████ █████     ██ ██  ██ █████      ██    
