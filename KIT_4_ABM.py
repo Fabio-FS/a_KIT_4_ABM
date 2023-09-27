@@ -11,11 +11,11 @@ import pathlib
 from Clustering import *
 from Init_and_Dynamics import *
 from Save_Functions import *
-from Utilities import *
+#from Utilities import *
 import json
 
 def import_parameters(namefile):
-    # namefile is a txt file in the JSON format.
+    # namefile is a json file in the JSON format.
     # first I import everything into data, then I split data into P_lay, P_dyn, P_sim, P_rec
 
     with open(namefile) as f:
@@ -113,11 +113,11 @@ def run_temporal_evolution(G, list_of_rules, P_simulations, P_recordings):
     # L_REC is the list of recordings to be done DURING the simulations
     # L_REC_1 is the list of recordings to be done AFTER the simulations end
 
-    L_REC_0, L_REC, L_REC_1 = init_recordings(P_recordings, P_simulations["T"])
+    L_REC_0, L_REC, L_REC_1, Data = init_recordings(P_recordings, P_simulations["T"])
 
     # save the state of the system BEFORE the simulations begin
     for record0 in L_REC_0:
-        single_save(G, record0, -2)     # -1 means that the time step is before the simulations begin
+        single_save(G, record0, Data, internal_tick = -2)     # -2 means that the time step is before the simulations begin
 
     for internal_tick in range(P_simulations["T"]):
         #print ("Time step: " + str(i) + "/" + str(P_simulations["T"]))
@@ -129,11 +129,11 @@ def run_temporal_evolution(G, list_of_rules, P_simulations, P_recordings):
         # save the state of the system DURING the simulations (if the record delay is a multiple of the internal_tick, allows to save the state every N steps)
         for record in L_REC:
             if(internal_tick%record["DT"] == 0):
-                single_save(G, record, internal_tick, Delta_T = record["DT"])
+                single_save(G, record, internal_tick = internal_tick)
     
     # save the state of the system AFTER the simulations end
     for record1 in L_REC_1:
-        single_save(G, record1, -1)     # -1 means that the time step is after the simulations end
+        single_save(G, record1, internal_tick = -1)     # -1 means that the time step is after the simulations end
 
 
 

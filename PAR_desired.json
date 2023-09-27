@@ -1,5 +1,5 @@
 {
-    "P_simulations" : {"T" : 40},
+    "P_simulations" : {"T" : 100},
     "P_layer" : {
         "N_layers" : 1,
         "N_nodes" : 100,
@@ -18,10 +18,10 @@
         }
     },
     "P_recordings" :{
-        "N" : 3,
+        "N" : 1,
         "note" : "the default is to save nothing, and the file name is 'none.txt' and it will be empty, default DT = 0, which means not to save anything runtime",
         "filename"      : "SIRB_beta_0_02_01_h_0_betasymm_01.h5",
-        "Recording_0"   : {
+        "Recording_1"   : {
             "END"               : "True",
             "func"              : "frac",
             "target_fraction"   : 3,
@@ -29,7 +29,7 @@
             "target"            : "health_status",
             "name"              : "R"
         },
-        "Recording_1" : {
+        "Recording_0" : {
             "END"               : "True",
             "func"              : "homophily",
             "layer"             : 0,

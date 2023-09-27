@@ -5,7 +5,8 @@ import h5py
 
 
 
-
+class Saves:
+    pass
 
 
 
@@ -23,11 +24,13 @@ def init_recordings(P_recordings, T_max):
     L_REC   = []                        # list of recordings during the simulation
     L_REC_1 = []                        # list of recordings at the end of the simulation
 
+    Data = Saves()
+
     for i in range(P_recordings["N"]):
         # for each recording i, read the parameters and initialize the recording
         P_rec_i = P_recordings["Recording_" + str(i)]
         # for each of recording, I calculate how often it appears:
-        count = 0
+        P_rec_i["total_count"] = 0
 
         if "BEGIN" not in P_rec_i:
             # if BEGIN is not specified, set it to False
@@ -44,27 +47,31 @@ def init_recordings(P_recordings, T_max):
 
         if(P_rec_i["BEGIN"] == "True"):
             L_REC_0.append(P_rec_i)
-            count += 1
+            P_rec_i["total_count"] += 1
         if(P_rec_i["END"] == "True"):
             L_REC_1.append(P_rec_i)
-            count += 1
+            P_rec_i["total_count"] += 1
         if(P_rec_i["DT"] > 0):
             L_REC.append(P_rec_i)
-            count += int(T_max/P_rec_i["DT"])
-        if count > 0:
-            P_rec_i["DATA"] = np.empty(count, dtype=object)
+            P_rec_i["total_count"] += int(T_max/P_rec_i["DT"])
+        if P_rec_i["total_count"] > 0:
+            #P_rec_i["DATA"] = np.empty(count, dtype=object)
             P_rec_i["count"] = 0
+            setattr(Data,P_rec_i["name"],np.empty(P_rec_i["total_count"], dtype=object))
 
-    return L_REC_0, L_REC, L_REC_1      # list of recordings at the beginning of the simulation, during the simulation, and at the end of the simulation
+    return L_REC_0, L_REC, L_REC_1, Data      # list of recordings at the beginning of the simulation, during the simulation, and at the end of the simulation
 
 
 
 #single_save(G, record, internal_tick, Delta_T = record["DT"])
-def single_save(G, P_rec, tick, Delta_T = -10):
+def single_save(G, P_rec, Data, internal_tick = -10):
     name = P_rec["func"]
     try:
         function = saving_dictionary[name]
-        function(G, P_rec)  # Call the function and save the results in P_rec["DATA"]
+        RES = function(G, P_rec)  # Call the function and save the results in P_rec["DATA"]
+        # save the results in the Data object
+        getattr(Data,P_rec["name"])[P_rec["count"]] = RES
+        P_rec["count"] += 1
     except KeyError:
         print("ERROR: " + name + " NOT IMPLEMENTED YET! NUUUUUU")
     pass
@@ -83,7 +90,10 @@ def save_in_dict(temp, key, value):
             print("something went wrong! the key " + key + " is not a nparray")
     # if the key "X" does not exist, create it and append the values
     else:
-        print("something went wrong! the key " + key + " does not exist in the dictionary")
+        temp[key] = np.empty(temp["total_count"], dtype=type(value))
+        temp[key][temp["count"]] = value
+        temp["count"] += 1
+        print("creating the key " + key + " in the dictionary" + str(temp))
 
 
 
@@ -126,7 +136,7 @@ def save_homophily(G,P_rec):
     save_in_dict(P_rec, "DATA", RES)
 
 def save_fr_local(G,P_rec):
-    RES = fr_local(G[P_rec["layer"]].vs[P_rec["target"]])
+    RES = fr_local(G[P_rec["layer"]].vs[P_rec["target"]],P_rec["target"])
     save_in_dict(P_rec, "DATA", RES)
 
 def save_graph(G,P_rec):
@@ -167,6 +177,9 @@ saving_dictionary = {
     "graph" : save_graph
 }
 
+
+
+# writing functions for the hdf5 files
 def save_scalar(name, i, n_trials, key, value):
     #print("this should not be used... only np arrays?")
     #print("key: " + key + " value: " + str(value))
@@ -174,8 +187,15 @@ def save_scalar(name, i, n_trials, key, value):
         if key in f.keys():
             f[key][i] = value
         else:
-            temp = np.zeros(n_trials)
-            temp[i] = value
+            temp = np.empty(n_trials, dtype=type(value))
+            temp[i] = value[0]
+            print("temp=",temp)
+            print("temp.shape=", temp.shape)
+            print("temp.dtype=", temp.dtype)
+            print("value=",value)
+            print("i=",i)
+            print("key = ", key)
+        
             f.create_dataset(key, data=temp)
     return None
 
