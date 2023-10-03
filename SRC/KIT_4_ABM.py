@@ -38,7 +38,9 @@ def run_sim(P_layer, P_dynamic, P_simulations, P_recordings):
     list_of_rules = imprint_rules(G, P_dynamic)
     
     #print("The graph is now completed. now running the simulations...")
-    run_temporal_evolution(G, list_of_rules, P_simulations, P_recordings)
+    Data = run_temporal_evolution(G, list_of_rules, P_simulations, P_recordings)
+    
+    return Data
 
 #  ██ ███    ██ ██ ████████                     ███    ██ ███████ ████████ 
 #  ██ ████   ██ ██    ██                        ████   ██ ██         ██    
@@ -113,11 +115,13 @@ def run_temporal_evolution(G, list_of_rules, P_simulations, P_recordings):
     # L_REC is the list of recordings to be done DURING the simulations
     # L_REC_1 is the list of recordings to be done AFTER the simulations end
 
-    L_REC_0, L_REC, L_REC_1, Data = init_recordings(P_recordings, P_simulations["T"])
+    L_REC_0, L_REC, L_REC_1 = init_recordings(P_recordings, P_simulations["T"])
 
+    results = Saves()
     # save the state of the system BEFORE the simulations begin
     for record0 in L_REC_0:
-        single_save(G, record0, Data, internal_tick = -2)     # -2 means that the time step is before the simulations begin
+        #print("doing something before the simulations begin")
+        single_save(G, record0, results, internal_tick = -2)     # -2 means that the time step is before the simulations begin
 
     for internal_tick in range(P_simulations["T"]):
         #print ("Time step: " + str(i) + "/" + str(P_simulations["T"]))
@@ -129,11 +133,15 @@ def run_temporal_evolution(G, list_of_rules, P_simulations, P_recordings):
         # save the state of the system DURING the simulations (if the record delay is a multiple of the internal_tick, allows to save the state every N steps)
         for record in L_REC:
             if(internal_tick%record["DT"] == 0):
-                single_save(G, record, internal_tick = internal_tick)
+        #        print("doing something during the simulations")
+                single_save(G, record, results, internal_tick = internal_tick)
     
     # save the state of the system AFTER the simulations end
     for record1 in L_REC_1:
-        single_save(G, record1, internal_tick = -1)     # -1 means that the time step is after the simulations end
+        #print("doing something after the simulations end")
+        single_save(G, record1, results, internal_tick = -1)     # -1 means that the time step is after the simulations end
+
+    return results
 
 
 

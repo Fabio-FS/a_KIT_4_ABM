@@ -95,9 +95,9 @@ def set_continuous_initial_condition(IC, name, g):
 #         #  #  #   #         #    # #        #   ###### 
 #   #     #  #  #    #        #    # #        #   #    # 
 #    #####  ### #     #       #####  ######   #   #    # 
-                                       
-                                              
-                                 
+
+
+
 
 def init_SIRB_beta(P_dyn, G):
     """
