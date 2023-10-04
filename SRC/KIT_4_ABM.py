@@ -141,9 +141,18 @@ def run_temporal_evolution(G, list_of_rules, P_simulations, P_recordings):
         #print("doing something after the simulations end")
         single_save(G, record1, results, internal_tick = -1)     # -1 means that the time step is after the simulations end
 
+
+    convert_results_to_float(results)
+
     return results
 
 
+def convert_results_to_float(results):
+    """this function goes through all the attributes of results, and converts the arg.data into a np.float64 array"""
+    attrs = [a for a in dir(results) if not a.startswith('_')]
+    for attr in attrs:
+        if(type(getattr(results, attr)) == np.ndarray):
+            setattr(results, attr, getattr(results, attr).astype(getattr(results, attr)[0].dtype))
 
 
 

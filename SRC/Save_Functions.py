@@ -172,8 +172,6 @@ def fr_local(g, name, value):
     return RES
 
 
-
-
 saving_dictionary = {
     "ALL" : save_ALL,
     "avg" : save_mean,
@@ -202,8 +200,10 @@ def save_scalar(name, i, n_trials, key, value):
     #print("key: " + key + " value: " + str(value))
     with h5py.File(name, 'a') as f:
         if key in f.keys():
+            print("append")
             f[key][i] = value
         else:
+            print("initialize")
             temp = np.empty(n_trials, dtype=type(value))
             temp[i] = value[0]
             print("temp=",temp)
@@ -216,27 +216,31 @@ def save_scalar(name, i, n_trials, key, value):
             f.create_dataset(key, data=temp)
     return None
 
-def save_array(name, i, key, value):
+def write_array(name, key, i, value):
+    print("saving_array")
     with h5py.File(name, 'a') as f:
+        print("key = ", key)
         key = "Trial_" + str(i) + "_" + key
-        if isinstance(value, np.ndarray):
-            if key in f.keys():
-                f[key].resize((f[key].shape[0] + value.shape[0]), axis=0)
-                f[key][-value.shape[0]:] = value
-            else:
-                f.create_dataset(key, data=value, chunks=True, maxshape=(None,))
-    return None
+        f.create_dataset(key, data=value, chunks=True, maxshape=(None,))
+        #f[key].resize((f[key].shape[0] + value.shape[0]), axis=0)
+    #            f[key][-value.shape[0]:] = value
+    #        else:
+    #            
+    #return None
 
 
 
 #i, n_trials+1, P_rec, Data
 def write_h5(i, n_trials, P_rec, results):
-    
+
+    print("parameters are: i=",i," n_trials=",n_trials," P_rec=",P_rec," results=",results)
     filename = P_rec["filename"]
     attributes =  [a for a in dir(results) if not a.startswith('_')]
     for name_attr in attributes:
-        Obj = getattr(results,i)
+        Obj = getattr(results,name_attr)
         L = len(Obj.data)
+        print("L=",L)
+        print(" I should enter in write array")
 
         if L > 1:
             # if the length of the array is > 1, save it as an array, and indipendently for each trial

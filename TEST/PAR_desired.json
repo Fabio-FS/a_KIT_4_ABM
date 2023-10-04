@@ -1,9 +1,9 @@
 {
-    "P_simulations" : {"T" : 100},
+    "P_simulations" : {"T" : 10},
     "P_layer" : {
         "N_layers" : 1,
-        "N_nodes" : 100,
-        "Layer_0" : { "type"  : "WS", "D" : 2, "L" : 10, "NFN" : 4, "P" : 0.02}
+        "N_nodes" : 4,
+        "Layer_0" : { "type"  : "WS", "D" : 2, "L" : 2, "NFN" : 4, "P" : 0.02}
     },
     "P_dynamic" : {
         "N" : 1,
@@ -27,7 +27,7 @@
             "func"              : "frac",
             "target_fraction"   : 3,
             "layer"             : 0,
-            "target"            : "health_status",
+            "target"            : "behavior_status",
             "name"              : "R"
         }
             
