@@ -24,11 +24,11 @@
         "Recording_0"   : {
             "END"             : "True",
             "DT"              : 1,
-            "func"              : "frac",
-            "target_fraction"   : 3,
+            "func"              : "ALL",
+            "target_fraction"   : 1,
             "layer"             : 0,
-            "target"            : "behavior_status",
-            "name"              : "R"
+            "target"            : "health_status",
+            "name"              : "ALL"
         }
             
     }
