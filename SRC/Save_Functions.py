@@ -101,6 +101,10 @@ def single_save(G, P_rec, results, internal_tick = -10):
 
 
 
+# measure for the health dynamic: 
+#   - hight of the peak of the wave
+#   - time above a threshold
+#   - 
 
 
 
@@ -124,6 +128,8 @@ def save_var(G,P_rec):
     RES = np.var(G[P_rec["layer"]].vs[P_rec["target"]])
     return RES
     #save_in_dict(P_rec, "DATA", RES)
+
+# add other polarization measures: Esteban Ray, std of pairwise differences, etc.
 
 def save_max(G,P_rec):
     RES = np.max(G[P_rec["layer"]].vs[P_rec["target"]])

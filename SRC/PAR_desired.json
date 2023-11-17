@@ -7,14 +7,33 @@
     },
     "P_dynamic" : {
         "N" : 1,
+        "Dynamic_2" :{
+            "func" : "SIRV",
+            "S2I" : 0.2,
+            "I2R"   : 0.1,
+            "S2V_l" : 0,
+            "S2V_h" : 0.2,
+            "VA"    : 0.1,
+            "HEALTH" : {"name" : "health_status", "layer" : 0, "IC" : {"type" : "random", "N_pat_zero" : 1}},
+            "BEHAVIOR" : {"name" : "behavior_status", "layer" : 0, "static" : "True", "IC" :   { "type" : "random_beta", "alpha" : 0.1,
+                                                                                "homophily" : {"Flag" :"False"}}                                                                            }
+        },
+        "Dynamic_1" :{
+            "func" : "my_SIRB_beta",
+            "filename" : "C:/OTHER/OLD/unsorted/Newfolder/Newfolder2/Nuova %2 Cartella/ARNE/SIR.py",
+            "S2I_l" : 0,
+            "S2I_h" : 0.2,
+            "I2R"   : 0.1,
+            "HEALTH" : {"name" : "health_status", "layer" : 0, "IC" : {"type" : "random", "N_pat_zero" : 1}},
+            "BEHAVIOR" : {"name" : "behavior_status", "layer" : 0, "static" : "True", "IC" :   { "type" : "random_beta", "alpha" : 0.1,                                                                                "homophily" : {"Flag" :"False"}}                                                                            }
+        },
         "Dynamic_0" :{
             "func" : "SIRB_beta",
             "S2I_l" : 0,
             "S2I_h" : 0.2,
             "I2R"   : 0.1,
             "HEALTH" : {"name" : "health_status", "layer" : 0, "IC" : {"type" : "random", "N_pat_zero" : 1}},
-            "BEHAVIOR" : {"name" : "behavior_status", "layer" : 0, "static" : "True", "IC" :   { "type" : "random_beta", "alpha" : 0.1,
-                                                                                "homophily" : {"Flag" :"False"}}                                                                            }
+            "BEHAVIOR" : {"name" : "behavior_status", "layer" : 0, "static" : "True", "IC" :   { "type" : "random_beta", "alpha" : 0.1,                                                                                "homophily" : {"Flag" :"False"}}                                                                            }
         }
     },
     "P_recordings" :{

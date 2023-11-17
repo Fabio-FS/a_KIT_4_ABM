@@ -30,7 +30,6 @@ def import_parameters(namefile):
 
     return P_lay, P_dyn, P_sim, P_rec
 
-
 def run_sim(P_layer, P_dynamic, P_simulations, P_recordings):
 
     # initialize the graph creating all the needed layers. for each layer create the network
@@ -80,7 +79,6 @@ def init_graph(P_lay):
         G.append(g)
     return G
 
-
 #  ██ ███    ███ ██████  ██████  ██ ███    ██ ████████     ██████  ██    ██ ██      ███████ ███████ 
 #  ██ ████  ████ ██   ██ ██   ██ ██ ████   ██    ██        ██   ██ ██    ██ ██      ██      ██      
 #  ██ ██ ████ ██ ██████  ██████  ██ ██ ██  ██    ██        ██████  ██    ██ ██      █████   ███████ 
@@ -94,17 +92,10 @@ def imprint_rules(G,P_dyn):
     for i in range(P_dyn["N"]):
         # for each dynamic i, read the parameters and initialize the rule
         P_dyn_i = P_dyn["Dynamic_" + str(i)]
-
-        
         single_rule = init_single_rule[P_dyn_i["func"]](P_dyn_i, G)
-        
-        
         LotR.append(single_rule)
 
     return LotR # list of rules
-
-
-
 
 def run_temporal_evolution(G, list_of_rules, P_simulations, P_recordings):
     # G is the list of graphs-layers (for now a single graph)
@@ -160,14 +151,14 @@ def convert_results_to_float(results):
 
 def single_update(G, rule):
     rule_name = rule["rule"]
+    #print("I am trying to update the following rule:" + rule_name)
+    #print("the available rules are:" + str(update_dictionary.keys()))
     try:
         function = update_dictionary[rule_name]
         function(G, rule)  # Call the function
     except KeyError:
         print("I cannot update the following rule:" + rule_name)
-        
-        print(type(rule_name))
-        print("ERROR: single_update of rule(" + rule + ") NOT IMPLEMENTED YET! NUUUUUU")
+        print("ERROR: single_update of rule(" + rule_name + ") NOT IMPLEMENTED YET, or something is broken in it")
     pass
 
 

@@ -1,35 +1,52 @@
 {
-    "P_simulations" : {"T" : 10},
+    "P_simulations" : {"T" : 500},
     "P_layer" : {
         "N_layers" : 1,
-        "N_nodes" : 4,
-        "Layer_0" : { "type"  : "WS", "D" : 2, "L" : 2, "NFN" : 4, "P" : 0.02}
+        "N_nodes" : 961,
+        "Layer_0" : { "type"  : "Lattice", "Lx" : 31, "Ly" : 31  } 
     },
     "P_dynamic" : {
         "N" : 1,
         "Dynamic_0" :{
-            "func" : "SIRB_beta",
+            "func" :  "SIRB_beta",
             "S2I_l" : 0,
             "S2I_h" : 0.2,
             "I2R"   : 0.1,
-            "HEALTH" : {"name" : "health_status", "layer" : 0, "IC" : {"type" : "random", "N_pat_zero" : 1}},
-            "BEHAVIOR" : {"name" : "behavior_status", "layer" : 0, "static" : "True", "IC" :   { "type" : "random_beta", "alpha" : 0.1,
-                                                                                "homophily" : {"Flag" :"False"}}                                                                            }
+            "HEALTH" : {"name" : "health_status", "layer" : 0, "IC" : {"type" : "central_geometric", "N_pat_zero" : 1}},
+            "BEHAVIOR" : {"name" : "behavior_status", "layer" : 0, "static" : "True", "IC" :   { "type" : "random_beta", "alpha" : 100,
+                                                                                "homophily" : {"Flag" :"False", "target" : 1, "steps" : 100000, "precision": 0}}                                                                          }
         }
     },
     "P_recordings" :{
-        "N" : 1,
+        "N" : 3,
         "note" : "the default is to save nothing, and the file name is 'none.txt' and it will be empty, default DT = 0, which means not to save anything runtime",
-        "filename"      : "SIRB_beta_0_02_01_h_0_betasymm_01.h5",
+        "filename"      : "Fig1.h5",
         "Recording_0"   : {
-            "END"             : "True",
-            "DT"              : 1,
-            "func"              : "ALL",
+            "BEGIN"             : "True",
+            "DT"                : 1,
+            "func"              : "frac",
             "target_fraction"   : 1,
             "layer"             : 0,
             "target"            : "health_status",
-            "name"              : "ALL"
+            "name"              : "S"
+        },
+        "Recording_1"   : {
+            "BEGIN"             : "True",
+            "DT"                : 1,
+            "func"              : "frac",
+            "target_fraction"   : 2,
+            "layer"             : 0,
+            "target"            : "health_status",
+            "name"              : "I"
+        },
+        "Recording_2"   : {
+            "BEGIN"             : "True",
+            "DT"                : 1,
+            "func"              : "frac",
+            "target_fraction"   : 3,
+            "layer"             : 0,
+            "target"            : "health_status",
+            "name"              : "R"
         }
-            
     }
 }
