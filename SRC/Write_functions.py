@@ -34,25 +34,21 @@ def write_h5(i, P_rec, results):
         simulation_group = hf.create_group(f"Simulation_{i}")
         # Iterate through the attributes of the object A
         for attr_name, attr_value in results.__dict__.items():
-            data = np.array(attr_value.data.tolist())
-            time = np.array(attr_value.time.tolist())
+            data = attr_value.data.tolist()
             #print("data = ", data, "\ntime = ", time)
 
             name_dataset_data = f"{attr_name}-data"
             name_dataset_time = f"{attr_name}-time"
 
             add_dataset_to_group(simulation_group, name_dataset_data, data)
-            add_dataset_to_group(simulation_group, name_dataset_time, time)
 
 
-# What follow will end up in a different file, with all the reading functions, and the one needed to parse and reconstruct the data. 
-
-def load_data_from_h5(filename):
-    data = {}
-    with h5py.File(filename, 'r') as hf:
-        for key in hf.keys():
-            data[key] = {}
-            for subkey in hf[key].keys():
-                data[key][subkey] = np.array(hf[key][subkey])
-
-    return data
+def save_res_scalars(iteration, results, filename, L_tot):
+    with h5py.File(filename, 'a') as file:
+        for attr_name, attr_value in results.__dict__.items():
+            dataset_name = f'result_{attr_name}'
+            if dataset_name not in file:
+                # Create the dataset if it doesn't exist
+                file.create_dataset(dataset_name, shape=(L_tot,), dtype=np.float32)
+            #print(attr_name, attr_value)
+            file[dataset_name][iteration] = np.array(attr_value.data.tolist())[-1]

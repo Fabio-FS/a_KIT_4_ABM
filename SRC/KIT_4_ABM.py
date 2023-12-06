@@ -12,6 +12,7 @@ from Clustering import *
 from Init_and_Dynamics import *
 from Save_Functions import *
 from Write_functions import *
+from Load_and_plot import *
 
 #from Utilities import *
 import json
@@ -40,7 +41,7 @@ def run_sim(P_layer, P_dynamic, P_simulations, P_recordings):
     
     #print("The graph is now completed. now running the simulations...")
     Data = run_temporal_evolution(G, list_of_rules, P_simulations, P_recordings)
-    
+    print("The simulations are now completed. now saving the results...")
     return Data
 
 #  ██ ███    ██ ██ ████████                     ███    ██ ███████ ████████ 

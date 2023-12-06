@@ -1,28 +1,30 @@
 {
-    "P_simulations" : {"T" : 500},
+    "P_simulations" : {"T" : 100},
     "P_layer" : {
         "N_layers" : 1,
-        "N_nodes" : 961,
-        "Layer_0" : { "type"  : "Lattice", "Lx" : 31, "Ly" : 31  } 
+        "N_nodes" : 1024,
+        "Layer_0" : { "type"  : "Lattice", "Lx" : 32, "Ly" : 32, "D" : 1, "P" : 0.1, "NFN" : 16} 
     },
     "P_dynamic" : {
         "N" : 1,
         "Dynamic_0" :{
-            "func" :  "SIRB_beta",
-            "S2I_l" : 0,
-            "S2I_h" : 0.2,
+            "func" :  "SIRV",
+            "S2I"   : 0.4,
             "I2R"   : 0.1,
+            "S2V_l" : 0,
+            "S2V_h" : 0.2,
+            "VA" : 0.5,
             "HEALTH" : {"name" : "health_status", "layer" : 0, "IC" : {"type" : "central_geometric", "N_pat_zero" : 1}},
             "BEHAVIOR" : {"name" : "behavior_status", "layer" : 0, "static" : "True", "IC" :   { "type" : "random_beta", "alpha" : 100,
                                                                                 "homophily" : {"Flag" :"False", "target" : 1, "steps" : 100000, "precision": 0}}                                                                          }
         }
     },
     "P_recordings" :{
-        "N" : 3,
+        "N" : 6,
         "note" : "the default is to save nothing, and the file name is 'none.txt' and it will be empty, default DT = 0, which means not to save anything runtime",
-        "filename"      : "Fig1.h5",
+        "filename"      : "SIRV",
         "Recording_0"   : {
-            "BEGIN"             : "True",
+            "END"               : "True",
             "DT"                : 1,
             "func"              : "frac",
             "target_fraction"   : 1,
@@ -31,7 +33,7 @@
             "name"              : "S"
         },
         "Recording_1"   : {
-            "BEGIN"             : "True",
+            "END"               : "True",
             "DT"                : 1,
             "func"              : "frac",
             "target_fraction"   : 2,
@@ -40,13 +42,38 @@
             "name"              : "I"
         },
         "Recording_2"   : {
-            "BEGIN"             : "True",
+            "END"               : "True",
             "DT"                : 1,
             "func"              : "frac",
             "target_fraction"   : 3,
             "layer"             : 0,
             "target"            : "health_status",
             "name"              : "R"
+        },
+        "Recording_3"   : {
+            "END"               : "True",
+            "DT"                : 1,
+            "func"              : "frac",
+            "target_fraction"   : 4,
+            "layer"             : 0,
+            "target"            : "health_status",
+            "name"              : "V"
+        },
+        "Recording_4"   : {
+            "END"               : "True",
+            "DT"                : 1,
+            "func"              : "var",
+            "layer"             : 0,
+            "target"            : "behavior_status",
+            "name"              : "P"
+        },
+        "Recording_5"   : {
+            "END"               : "True",
+            "DT"                : 1,
+            "func"              : "homophily",
+            "layer"             : 0,
+            "target"            : "behavior_status",
+            "name"              : "H"
         }
     }
 }
