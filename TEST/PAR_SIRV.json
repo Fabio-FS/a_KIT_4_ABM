@@ -1,5 +1,5 @@
 {
-    "P_simulations" : {"T" : 100},
+    "P_simulations" : {"T" : 10},
     "P_layer" : {
         "N_layers" : 1,
         "N_nodes" : 1024,

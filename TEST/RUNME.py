@@ -69,20 +69,7 @@ def main():
             P_lay, P_sim, P_dyn, P_rec = reset_param(P_lay_original, P_sim_original, P_dyn_original, P_rec_original, ab)
 
             res = kit.run_sim(P_lay, P_dyn, P_sim, P_rec)
-            kit.write_h5(count, P_rec,res)
-            #kit.write_h5(count, P_rec, res)
-            #if P_sim["save_settings"] == "Round":
-            #    pass
-            #else:
-            #it.save_res_scalars(count, res, P_rec["filename"], n_trials*len(value_ab)) 
-            count += 1
-        #if P_sim["save_settings"] == "Round":
-            # rename the res
-            #print(type(res))
-            #kit.add_to_res(res, res2, str(round(ab,4)))
-            #kit.write_h5(count, P_rec, res2) 
-            #count += 1
-
+            kit.write_csv(P_rec,res)
 
 
 if __name__ == '__main__':
