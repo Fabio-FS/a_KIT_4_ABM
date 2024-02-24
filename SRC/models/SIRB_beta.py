@@ -4,7 +4,7 @@ from Clustering import *
 
 
 import sys
-sys.path.append('..')
+#sys.path.append('..')
 from utilities.IC import *
 
 

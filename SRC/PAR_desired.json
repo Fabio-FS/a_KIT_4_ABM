@@ -16,7 +16,8 @@
             "VA"    : 0.1,
             "HEALTH" : {"name" : "health_status", "layer" : 0, "IC" : {"type" : "random", "N_pat_zero" : 1}},
             "BEHAVIOR" : {"name" : "behavior_status", "layer" : 0, "static" : "True", "IC" :   { "type" : "random_beta", "alpha" : 0.1,
-                                                                                "homophily" : {"Flag" :"False"}}                                                                            }
+                                                                                "layer" : 0,
+                                                                                "homophily" : {"Flag" :"True", "target" : -1, "name" : "behavior_status"}}                                                                            }
         },
         "Dynamic_1" :{
             "func" : "my_SIRB_beta",

@@ -43,13 +43,6 @@ def main():
     P_lay, P_dyn, P_sim, P_rec = kit.import_parameters("PAR_SIRV.json")
     P_lay["Layer_0"]["P"] = WSP_ff
 
-
-    N = 21
-    d = 0.25/N
-    
-    range_pol = np.linspace(0+d,0.25-d, N-1)
-    value_ab = 1/(8*range_pol)-0.5
-
     P_rec["filename"] = P_rec["filename"]+ "_VA=" + str(va_ff)+ "_S2Vh="
     P_rec["filename"] = P_rec["filename"] + str(S2V_h_ff) + "_WSP=" + str(WSP_ff) + ".h5"
 
@@ -63,15 +56,13 @@ def main():
     n_trials = 1
     count = 0
     for i in range(n_trials):
-        for ab in value_ab:
-            print("Trial: " + str(count) + " of " + str(n_trials*N), "alpha = " + str(ab))
-            
-            P_lay, P_sim, P_dyn, P_rec = reset_param(P_lay_original, P_sim_original, P_dyn_original, P_rec_original, ab)
+        ab = 0.0001
+        print("Trial: " + str(count) + " of " + str(n_trials), "alpha = " + str(ab))
+        
+        P_lay, P_sim, P_dyn, P_rec = reset_param(P_lay_original, P_sim_original, P_dyn_original, P_rec_original, ab)
 
-            res, G = kit.run_sim(P_lay, P_dyn, P_sim, P_rec, return_G = True)
-            kit.plot_scatterplot(G, 0, "behavior_status", "scatter of behavior", "i", "j", save_as = "scatterplot" + str(count) + ".png")
-            kit.write_csv(P_rec,res)
-            count += 1
+        res, G = kit.run_sim(P_lay, P_dyn, P_sim, P_rec, return_G = True)
+        count += 1
 
 
 if __name__ == '__main__':

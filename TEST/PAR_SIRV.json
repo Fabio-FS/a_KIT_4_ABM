@@ -1,9 +1,9 @@
 {
-    "P_simulations" : {"T" : 10},
+    "P_simulations" : {"T" : 1},
     "P_layer" : {
         "N_layers" : 1,
-        "N_nodes" : 1024,
-        "Layer_0" : { "type"  : "Lattice", "Lx" : 32, "Ly" : 32, "D" : 1, "P" : 0.1, "NFN" : 16} 
+        "N_nodes" : 100,
+        "Layer_0" : { "type"  : "WS", "L" : 100, "D" : 1, "P" : 0.1, "NFN" : 16} 
     },
     "P_dynamic" : {
         "N" : 1,
@@ -15,14 +15,17 @@
             "S2V_h" : 0.2,
             "VA" : 0.5,
             "HEALTH" : {"name" : "health_status", "layer" : 0, "IC" : {"type" : "central_geometric", "N_pat_zero" : 1}},
-            "BEHAVIOR" : {"name" : "behavior_status", "layer" : 0, "static" : "True", "IC" :   { "type" : "random_beta", "alpha" : 100,
-                                                                                "homophily" : {"Flag" :"False", "target" : 1, "steps" : 100000, "precision": 0}}                                                                          }
+            "BEHAVIOR" : {"name" : "behavior_status", "layer" : 0, "static" : "True", "IC" :   { "type" : "random_beta", "alpha" : 0.001, "layer" : 0,
+                                                                                "homophily" : { "Flag" :"True", 
+                                                                                                "target" : 1, 
+                                                                                                "steps" : 100000,
+                                                                                                "name" : "behavior_status", 
+                                                                                                "debug" : "True "}}                                                                          }
         }
     },
     "P_recordings" :{
-        "N" : 6,
-        "note" : "the default is to save nothing, and the file name is 'none.txt' and it will be empty, default DT = 0, which means not to save anything runtime",
-        "filename"      : "SIRV",
+        "N" : 5,
+        "filename"      : "SIR",
         "Recording_0"   : {
             "END"               : "True",
             "DT"                : 1,
@@ -52,24 +55,13 @@
         },
         "Recording_3"   : {
             "END"               : "True",
-            "DT"                : 1,
-            "func"              : "frac",
-            "target_fraction"   : 4,
-            "layer"             : 0,
-            "target"            : "health_status",
-            "name"              : "V"
-        },
-        "Recording_4"   : {
-            "END"               : "True",
-            "DT"                : 1,
             "func"              : "var",
             "layer"             : 0,
             "target"            : "behavior_status",
             "name"              : "P"
         },
-        "Recording_5"   : {
+        "Recording_4"   : {
             "END"               : "True",
-            "DT"                : 1,
             "func"              : "homophily",
             "layer"             : 0,
             "target"            : "behavior_status",

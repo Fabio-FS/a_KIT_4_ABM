@@ -196,3 +196,126 @@ saving_dictionary = {
     "fr_local" : save_fr_local,
     "graph" : save_graph
 }
+
+
+
+# writing functions for the hdf5 files
+def save_scalar(name, i, n_trials, key, value):
+    #print("this should not be used... only np arrays?")
+    #print("key: " + key + " value: " + str(value))
+    with h5py.File(name, 'a') as f:
+        if key in f.keys():
+            print("append")
+            f[key][i] = value
+        else:
+            print("initialize")
+            temp = np.empty(n_trials, dtype=type(value))
+            temp[i] = value[0]
+            print("temp=",temp)
+            print("temp.shape=", temp.shape)
+            print("temp.dtype=", temp.dtype)
+            print("value=",value)
+            print("i=",i)
+            print("key = ", key)
+        
+            f.create_dataset(key, data=temp)
+    return None
+
+def write_array(name, key, i, value):
+    print("saving_array")
+    with h5py.File(name, 'a') as f:
+        print("key = ", key)
+        key = "Trial_" + str(i) + "_" + key
+        f.create_dataset(key, data=value, chunks=True, maxshape=(None,))
+        #f[key].resize((f[key].shape[0] + value.shape[0]), axis=0)
+    #            f[key][-value.shape[0]:] = value
+    #        else:
+    #            
+    #return None
+
+
+
+#i, n_trials+1, P_rec, Data
+def write_h5(i, n_trials, P_rec, results):
+
+    print("parameters are: i=",i," n_trials=",n_trials," P_rec=",P_rec," results=",results)
+    filename = P_rec["filename"]
+    attributes =  [a for a in dir(results) if not a.startswith('_')]
+    for name_attr in attributes:
+        Obj = getattr(results,name_attr)
+        L = len(Obj.data)
+        print("L=",L)
+        print(" I should enter in write array")
+
+        if L > 1:
+            # if the length of the array is > 1, save it as an array, and indipendently for each trial
+            # the name of the array will be: T_$i$_name
+            write_array(filename, name_attr, i, Obj)
+            pass
+        else:
+            # if the length of the array is 1, create an array and save it inside the i-th trial elements of the array
+            # the name of the array will be: name
+            write_scalar(filename, name_attr, i, n_trials, Obj)
+            pass
+
+
+def write_scalar(filename, attribute_name, i, n_trials, Obj):
+    """
+    if "i" = 0, saves in the h5 file an array of length n_trials, where each entry is equal to Obj.data.
+    if "i" > 0, saves in the h5 file the value Obj.data in the i-th entry of the array.
+    """
+    if i == 0:
+        # if i = 0, initialize the array
+        temp = np.empty(n_trials, dtype=type(Obj.data))
+        temp[:] = Obj.data.copy()
+        # save the array in the h5 file
+        with h5py.File(filename, 'a') as f:
+            f.create_dataset(attribute_name, data=temp)
+    else:
+        with h5py.File(filename, 'a') as f:
+            f[attribute_name][i] = value
+
+        
+
+
+def save_scalar(name, i, n_trials, key, value):
+    #print("this should not be used... only np arrays?")
+    #print("key: " + key + " value: " + str(value))
+    with h5py.File(name, 'a') as f:
+        if key in f.keys():
+            f[key][i] = value
+        else:
+            temp = np.empty(n_trials, dtype=type(value))
+            temp[i] = value[0]
+            print("temp=",temp)
+            print("temp.shape=", temp.shape)
+            print("temp.dtype=", temp.dtype)
+            print("value=",value)
+            print("i=",i)
+            print("key = ", key)
+        
+            f.create_dataset(key, data=temp)
+    return None
+
+
+
+
+
+
+
+def tell_me_what_is_saved(name):
+    with h5py.File(name, 'r') as f:
+        for key in f.keys():
+            print(key, f[key].shape)
+    return None
+
+def load_array(name, key):
+    """
+    loads a dataset from a hdf5 file
+    """
+    with h5py.File(name, 'r') as f:
+        if key in f.keys():
+            return f[key][:]
+        else:
+            print("this dataset does not exist")
+            return None

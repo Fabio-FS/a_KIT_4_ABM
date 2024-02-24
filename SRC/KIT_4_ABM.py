@@ -11,11 +11,11 @@ import pathlib
 from Clustering import *
 from Init_and_Dynamics import *
 from Save_Functions import *
-from Write_functions import *
 from Write_functions_csv import *
 from Load_and_plot import *
+from Visualize_post_hoc import *
 
-#from Utilities import *
+
 import json
 
 def import_parameters(namefile):
@@ -32,7 +32,7 @@ def import_parameters(namefile):
 
     return P_lay, P_dyn, P_sim, P_rec
 
-def run_sim(P_layer, P_dynamic, P_simulations, P_recordings):
+def run_sim(P_layer, P_dynamic, P_simulations, P_recordings, return_G = False):
 
     # initialize the graph creating all the needed layers. for each layer create the network
     G = init_graph(P_layer) # G is a list of graphs.
@@ -43,6 +43,8 @@ def run_sim(P_layer, P_dynamic, P_simulations, P_recordings):
     #print("The graph is now completed. now running the simulations...")
     Data = run_temporal_evolution(G, list_of_rules, P_simulations, P_recordings)
     print("The simulations are now completed. now saving the results...")
+    if return_G:
+        return Data, G
     return Data
 
 #  ██ ███    ██ ██ ████████                     ███    ██ ███████ ████████ 
@@ -164,4 +166,6 @@ def single_update(G, rule):
     pass
 
 
-# %%
+
+
+
