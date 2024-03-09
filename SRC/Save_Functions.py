@@ -1,7 +1,7 @@
 import numpy as np
 import igraph as ig
-from Clustering import calc_H
-
+#from Clustering import calc_H
+from Hom_and_pol import calc_homophily, calc_polarization
 
 
 class Saves:
@@ -111,71 +111,56 @@ def single_save(G, P_rec, results, internal_tick = -10):
 def save_ALL(G,P_rec):
     RES = G[P_rec["layer"]].vs[P_rec["target"]]
     return RES
-    #save_in_dict(P_rec, "DATA", RES)
 
 def save_mean(G,P_rec):
     RES = np.mean(G[P_rec["layer"]].vs[P_rec["target"]])    
     return RES
-    #save_in_dict(P_rec, "DATA", RES)
 
 def save_median(G,P_rec):
     RES = np.median(G[P_rec["layer"]].vs[P_rec["target"]])
     return RES
-    #save_in_dict(P_rec, "DATA", RES)
 
 def save_var(G,P_rec):
     RES = np.var(G[P_rec["layer"]].vs[P_rec["target"]])
     return RES
-    #save_in_dict(P_rec, "DATA", RES)
 
 # add other polarization measures: Esteban Ray, std of pairwise differences, etc.
 
 def save_max(G,P_rec):
     RES = np.max(G[P_rec["layer"]].vs[P_rec["target"]])
     return RES
-    #save_in_dict(P_rec, "DATA", RES)
 
 def save_min(G,P_rec):
     RES = np.min(G[P_rec["layer"]].vs[P_rec["target"]])
     return RES
-    #save_in_dict(P_rec, "DATA", RES)
 
 def save_frac(G,P_rec):
     RES =np.sum(np.array(G[P_rec["layer"]].vs[P_rec["target"]]) == P_rec["target_fraction"])/len(G[P_rec["layer"]].vs[P_rec["target"]])
     return RES
-    #save_in_dict(P_rec, "DATA", RES)
 
 def save_histogram(G,P_rec):
     RES = np.histogram(G[P_rec["layer"]].vs[P_rec["target"]])
     return RES
-    #save_in_dict(P_rec, "DATA", RES)
 
 def save_homophily(G,P_rec):
-    RES = calc_H(G[P_rec["layer"]], P_rec["target"])
+    RES = calc_homophily(G[P_rec["layer"]], P_rec["target"])
     return RES
-    #save_in_dict(P_rec, "DATA", RES)
 
 def save_fr_local(G,P_rec):
     RES = fr_local(G[P_rec["layer"]].vs[P_rec["target"]],P_rec["target"])
     return RES
-    #save_in_dict(P_rec, "DATA", RES)
-
-def save_graph(G,P_rec):
-    # in case of several replicas, this overwrites the previous graph. I haven't looked into how to append a graph to a file yet.
-    RES = ig.write_graph(G[0], P_rec["filename"])
-    return RES
-    #save_in_dict(P_rec, "DATA", RES)
 
 def fr_local(g, name, value):
-    # returns the fraction of neighbors with the same value  g is the graph  name is the name of the attribute  value is the value of the attribute
-    # for each node, get the list of neighbors, and the fraction of neighbors with value = value, and store it in a list called RES
-
+    # returns the fraction of neighbors with the same value. g is the graph,  name is the name of the attribute,  value is the value of the attribute
     RES = []
     
     for i in range(len(g.vs)):
         RES.append(np.array(g.vs[g.neighbors(i)][name]) == value)/len(g.neighbors(i))
     return RES
 
+def save_pol(G,P_rec):
+    RES = calc_polarization(G[P_rec["layer"]], P_rec["target"])
+    return RES
 
 saving_dictionary = {
     "ALL" : save_ALL,
@@ -194,5 +179,5 @@ saving_dictionary = {
     "histogram" : save_histogram,
     "homophily" : save_homophily,
     "fr_local" : save_fr_local,
-    "graph" : save_graph
+    "pol" : save_pol
 }

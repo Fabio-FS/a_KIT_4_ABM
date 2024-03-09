@@ -1,6 +1,5 @@
 import numpy as np
 import igraph as ig
-from Clustering import *
 
 
 import sys

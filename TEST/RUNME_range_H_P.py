@@ -56,7 +56,7 @@ def main():
     n_trials = 1
     count = 0
     for i in range(n_trials):
-        ab = 100
+        ab = 0.0001
         print("Trial: " + str(count) + " of " + str(n_trials), "alpha = " + str(ab))
         
         P_lay, P_sim, P_dyn, P_rec = reset_param(P_lay_original, P_sim_original, P_dyn_original, P_rec_original, ab)

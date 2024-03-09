@@ -8,12 +8,10 @@ import numpy as np
 import igraph as ig
 import random as rn
 import pathlib
-from Clustering import *
+#from Clustering import *
 from Init_and_Dynamics import *
 from Save_Functions import *
 from Write_functions_csv import *
-from Load_and_plot import *
-from Visualize_post_hoc import *
 
 
 import json
@@ -42,7 +40,7 @@ def run_sim(P_layer, P_dynamic, P_simulations, P_recordings, return_G = False):
     
     #print("The graph is now completed. now running the simulations...")
     Data = run_temporal_evolution(G, list_of_rules, P_simulations, P_recordings)
-    print("The simulations are now completed. now saving the results...")
+    print("The simulations are now completed")
     if return_G:
         return Data, G
     return Data

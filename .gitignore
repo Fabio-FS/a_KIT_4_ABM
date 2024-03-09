@@ -1,1 +1,7 @@
 *.h5
+*.csv
+./PROJECTS/
+./OLD things/
+./Figures/
+./TEST/
+SRC/__pycache__

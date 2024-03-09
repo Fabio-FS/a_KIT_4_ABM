@@ -1,7 +1,7 @@
 import numpy as np
 import igraph as ig
-from Clustering import *
-from Metrics_of_graph import *
+#from Clustering import *
+from SRC.Hom_and_pol import *
 import os
 
 
@@ -34,15 +34,12 @@ def set_continuous_initial_condition(IC, name, g):
     elif(IC["type"] == "random_beta"):
         # if alpha is not defined, sets it to be equal to beta, and viceversa
         if("alpha" not in IC):
-            a = IC["beta"]
-            b = IC["beta"]
+            a, b = IC["beta"], IC["beta"]
         elif("beta" not in IC):
-            a = IC["alpha"]
-            b = IC["alpha"]
+            a, b = IC["alpha"], IC["alpha"]
         else:
-            a = IC["alpha"]
-            b = IC["beta"]
-        #print("getting here!")
+            a, b = IC["alpha"], IC["beta"]
+
         VECTOR_INIT = np.random.beta(a,b,len(g.vs))
         g.vs[name]= VECTOR_INIT
     elif(IC["type"] == "vector"):
@@ -51,44 +48,44 @@ def set_continuous_initial_condition(IC, name, g):
         print("INITALIZATION RULE: " + IC["type"] + " NOT IMPLEMENTED YET! NUUUUUU")
     if(IC["homophily"]["Flag"] == "True"):
         # case 1 debug = False, return_H_hist = False
-        if(IC["homophily"]["debug"] == False and IC["homophily"]["return_H_hist"] == False):
-            metropolis_slow(g, name =  name, target = IC["homophily"]["target"], N_steps = IC["homophily"]["steps"], precision = 0.01, return_H_hist = False,debug = False)
-            #don't save anything
-        # case 2 debug = False, return_H_hist = True
-        elif(IC["homophily"]["debug"] == False and IC["homophily"]["return_H_hist"] == True):
-            H_hist = metropolis_slow(g, name =  name, target = IC["homophily"]["target"], N_steps = IC["homophily"]["steps"], precision = 0.01, return_H_hist = True,debug = False)
-            # save the history of homophily
-            
-            if os.path.exists("H_hist.csv"):
-                os.remove("H_hist.csv")
-            np.savetxt("H_hist.csv", H_hist, delimiter=",")
-        elif(IC["homophily"]["debug"] == True and IC["homophily"]["return_H_hist"] == False):
-            pass # this case is not implemented
-        else:
-            H_hist, all_B, A = metropolis_slow(g, name =  name, target = IC["homophily"]["target"], N_steps = IC["homophily"]["steps"], precision = 0.01, return_H_hist = True,debug = True)
-            # if "H_hist.csv" exists, delete it
-            # imports the libraries needed to os.remove
-            if os.path.exists("H_hist.csv"):
-                os.remove("H_hist.csv")
-            # save the history of homophily
-            np.savetxt("H_hist.csv", H_hist, delimiter=",")
-            # save the history of the behavior as TxM matrix:
+        results = metropolis(   g, 
+                                name =  name, 
+                                target = IC["homophily"]["target"], 
+                                N_steps = IC["homophily"]["steps"],
+                                return_H_hist = IC["homophily"]["return_H_hist"],
+                                dbg = IC["homophily"]["debug"])
+        save_results_for_range_pol_hom(results, g, IC["homophily"]["debug"],IC["homophily"]["return_H_hist"])
 
-            if os.path.exists("all_B.csv"):
-                os.remove("all_B.csv")
-            
 
-            # decrease the number of all_B to be written on file.
-            indx = calc_indxs(all_B)
-        
-            all_B2 = all_B[indx,:]
 
-            np.savetxt("all_B.csv", all_B2, delimiter=",")
+def save_results_for_range_pol_hom(results, g, debug, return_H_hist):
+    if (not return_H_hist and not debug):
+        rr = results
+        pass
+    if (return_H_hist and not debug):
+        H_hist = results[1]
+    if (not return_H_hist and debug):
+        hist_B, A = results[1], results[2]
+        pass
+    if (return_H_hist and debug):
+        H_hist = results[1]
+        hist_B, A = results[2], results[3]
 
-            # save the adjacency matrix
-            if os.path.exists("ADJ.csv"):
-                os.remove("ADJ.csv")
-            ig.Graph.write_adjacency(g, "ADJ.csv")
+    if(return_H_hist):
+        if os.path.exists("H_hist.csv"):
+            os.remove("H_hist.csv")
+        np.savetxt("H_hist.csv", H_hist, delimiter=",")
+    
+    if(debug):
+        if os.path.exists("hist_B.csv"):
+            os.remove("hist_B.csv")
+        indx = calc_indxs(hist_B)
+        hist_B2 = hist_B[indx,:]
+
+        np.savetxt("hist_B.csv", hist_B2, delimiter=",")
+        if os.path.exists("ADJ.csv"):
+            os.remove("ADJ.csv")
+        ig.Graph.write_adjacency(g, "ADJ.csv")
 
 
 def calc_indxs(all_B):
