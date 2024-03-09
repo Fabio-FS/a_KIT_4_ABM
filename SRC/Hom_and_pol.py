@@ -2,7 +2,7 @@
 # coding: utf-8
 
 # In[ ]:
-# meaningless change to test git
+# meaningless change to test git2
 
 import numpy as np
 import igraph as ig
