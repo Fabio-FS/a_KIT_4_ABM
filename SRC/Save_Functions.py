@@ -178,6 +178,8 @@ saving_dictionary = {
     "hist" : save_histogram,
     "histogram" : save_histogram,
     "homophily" : save_homophily,
+    "hom" : save_homophily,
     "fr_local" : save_fr_local,
-    "pol" : save_pol
+    "pol" : save_pol,
+    "polarization" : save_pol
 }

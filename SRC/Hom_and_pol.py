@@ -12,8 +12,7 @@ import pathlib
 import warnings
 from scipy.stats import beta
 
-# This is a Metropolis type of algorithm, where the proposed move is to switch the behavior of two nodes.
-# Consider, in the future, of implementing also a metropolis move where the behavior of only ONE node is considered.
+# This is a Metropolis algorithm, each proposed move switches the behavior of two nodes.
 # CERCA tra gli appunti di DI RENZO le note sugli algoritmi per ISING
 
 
