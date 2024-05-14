@@ -40,7 +40,7 @@ def run_sim(P_layer, P_dynamic, P_simulations, P_recordings, return_G = False):
     
     #print("The graph is now completed. now running the simulations...")
     Data = run_temporal_evolution(G, list_of_rules, P_simulations, P_recordings)
-    print("The simulations are now completed")
+    #print("The simulations are now completed")
     if return_G:
         return Data, G
     return Data

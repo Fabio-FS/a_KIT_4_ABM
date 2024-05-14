@@ -146,6 +146,15 @@ def save_homophily(G,P_rec):
     RES = calc_homophily(G[P_rec["layer"]], P_rec["target"])
     return RES
 
+def save_homophily_rescaled(G,P_rec):
+    RES = calc_homophily(G[P_rec["layer"]], P_rec["target"], flag = 1)
+    return RES
+
+def save_homophily_non_rescaled(G,P_rec):
+    RES = calc_homophily(G[P_rec["layer"]], P_rec["target"], flag = 2)
+    return RES
+
+
 def save_fr_local(G,P_rec):
     RES = fr_local(G[P_rec["layer"]].vs[P_rec["target"]],P_rec["target"])
     return RES
@@ -178,6 +187,8 @@ saving_dictionary = {
     "hist" : save_histogram,
     "histogram" : save_histogram,
     "homophily" : save_homophily,
+    "homophily_rescaled" : save_homophily_rescaled,
+    "homophily_non_rescaled" : save_homophily_non_rescaled,
     "hom" : save_homophily,
     "fr_local" : save_fr_local,
     "pol" : save_pol,

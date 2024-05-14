@@ -1,7 +1,7 @@
 import numpy as np
 import igraph as ig
 #from Clustering import *
-from SRC.Hom_and_pol import *
+from Hom_and_pol import *
 import os
 
 
@@ -53,7 +53,8 @@ def set_continuous_initial_condition(IC, name, g):
                                 target = IC["homophily"]["target"], 
                                 N_steps = IC["homophily"]["steps"],
                                 return_H_hist = IC["homophily"]["return_H_hist"],
-                                dbg = IC["homophily"]["debug"])
+                                dbg = IC["homophily"]["debug"],
+                                rescale = IC["homophily"]["rescale"])
         save_results_for_range_pol_hom(results, g, IC["homophily"]["debug"],IC["homophily"]["return_H_hist"])
 
 

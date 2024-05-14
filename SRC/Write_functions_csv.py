@@ -14,7 +14,7 @@ def write_csv(P_rec, res):
     with open(filename, 'a', newline='') as csvfile:
         # Extract attribute names ending with '.data'
         fieldnames = [attr for attr in dir(res) if hasattr(getattr(res, attr), 'data')]
-        print(fieldnames)
+        #print(fieldnames)
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
         if not file_exists:
