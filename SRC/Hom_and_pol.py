@@ -89,7 +89,7 @@ def metropolis(g, name =  "behavior_status", target = 0, N_steps = 10, tolleranc
         
         ### this part is for testing Sven idea. much faster if it works well.
         #print("real_resc = ", resc, "dummy_resc = ", dummy_resc, "difference = ", resc-dummy_resc, "percentage = ", (resc-dummy_resc)/resc*100, "%")
-
+# test
 
     else:
         g["rescale_homophily_flag"] = 0
