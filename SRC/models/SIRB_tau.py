@@ -9,7 +9,7 @@ from utilities.IC import *
 
 
 
-def init_SIRB_tau(P_dyn, G):
+def init_SIRB_tau(P_dyn, G, global_var):
     """
     SIRB_tau is initialized with the following parameters:
     "Dynamic_X" :{
@@ -49,7 +49,7 @@ def init_SIRB_tau(P_dyn, G):
 
 
 
-def update_SIRB_tau(G, rule):
+def update_SIRB_tau(G, rule, global_var):
     """this simulates the classical SIR model, where the probability of being infected depends ONLY on the behavior of the susceptible individuals
     G is the list of graphs-layers,
     layer is the layer where the dynamic is imprinted.
@@ -99,7 +99,7 @@ def update_SIRB_tau(G, rule):
             vertex["health_status"]=vertex['temp_status']
 
 
-def init_model(update_dictionary, init_single_rule):
-    #update_dictionary["SIRB_tau"] = update_SIRB_tau
-    #init_single_rule["SIRB_tau"] = init_SIRB_tau
+def init_model(update_fct_dict, init_fct_dict):
+    #update_fct_dict["SIRB_tau"] = update_SIRB_tau
+    #init_fct_dict["SIRB_tau"] = init_SIRB_tau
     pass

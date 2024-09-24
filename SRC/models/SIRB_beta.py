@@ -7,7 +7,7 @@ import sys
 from utilities.IC import *
 
 
-def init_SIRB_beta(P_dyn, G):
+def init_SIRB_beta(P_dyn, G, global_var):
     """
     SIRB_beta is initialized with the following parameters:
     "Dynamic_X" :{
@@ -50,7 +50,7 @@ def init_SIRB_beta(P_dyn, G):
 
 
 
-def update_SIRB_beta(G, rule):
+def update_SIRB_beta(G, rule, global_var):
     """this simulates the classical SIR model, where the probability of being infected depends ONLY on the behavior of the susceptible individuals
     G is the list of graphs-layers,
     layer is the layer where the dynamic is imprinted.
@@ -103,7 +103,7 @@ def update_SIRB_beta(G, rule):
             vertex["health_status"]=vertex['temp_status']
 
 
-def init_model(update_dictionary, init_single_rule):
-    update_dictionary["SIRB_beta"] = update_SIRB_beta
-    init_single_rule["SIRB_beta"] = init_SIRB_beta
+def init_model(update_fct_dict, init_fct_dict):
+    update_fct_dict["SIRB_beta"] = update_SIRB_beta
+    init_fct_dict["SIRB_beta"] = init_SIRB_beta
 

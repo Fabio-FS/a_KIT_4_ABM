@@ -1,4 +1,3 @@
-import numpy as np
 import os
 import importlib
 
@@ -9,9 +8,8 @@ file_names = [f[:-3] for f in os.listdir(folder_path) if f.endswith('.py')] # Ge
 
 
 
-
-update_dictionary = {}
-init_single_rule = {}
+update_fct_dict = {}
+init_fct_dict = {}
 
 
 
@@ -21,23 +19,6 @@ for module_name in file_names:
     # If you want to import all names from the module, you can use vars() or globals()
     globals().update(vars(module))
     if hasattr(module, 'init_model') and callable(module.init_model):
-        module.init_model(update_dictionary, init_single_rule)
-
-
-
-
-# Ask Arne how to make the code expandable without expanding the code. I want users to be able to add new rules without having to modify the code.
-# Update schedule?
-    # how to do the savings in case of evolutionary game theory? (several waves of infection)
-
-# Same models with different communication regimes (121, 12M, M21)
-
-
-
-
-# Ability to read csv files of graphs
-# Temporal network 
-# Ability to add new save functions
-
-
-
+        module.init_model(update_fct_dict, init_fct_dict)
+        #init_model manipulates both dictionaries
+        #and connects keys to actual functions, defined in subfolder models/

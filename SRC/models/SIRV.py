@@ -8,7 +8,7 @@ from utilities.IC import *
 
 
 
-def init_SIRV(P_dyn, G):
+def init_SIRV(P_dyn, G, global_var):
     """
     SIRV is initialized with the following parameters:
     "Dynamic_X" :{
@@ -51,7 +51,7 @@ def init_SIRV(P_dyn, G):
 
 
 
-def update_SIRV(G, rule):
+def update_SIRV(G, rule, global_var):
     #input("updating SIRV")
 
     """this simulates the classical SIR model, where the probability of being infected depends ONLY on the behavior of the susceptible individuals
@@ -129,6 +129,6 @@ def update_SIRV(G, rule):
         for vertex in g_h.vs:
             vertex["health_status"]=vertex['temp_status']
 
-def init_model(update_dictionary, init_single_rule):
-    update_dictionary["SIRV"] = update_SIRV
-    init_single_rule["SIRV"] = init_SIRV
+def init_model(update_fct_dict, init_fct_dict):
+    update_fct_dict["SIRV"] = update_SIRV
+    init_fct_dict["SIRV"] = init_SIRV
