@@ -1,8 +1,10 @@
 *.h5
 *.csv
+*.png
 PROJECTS/
 OLD things/
 Figures/
 TEST/
 SRC/__pycache__/
 SRC/models/__pycache__/
+SRC/utilities/__pycache__/
