@@ -67,7 +67,7 @@ def init_recordings(P_recordings, T_max):
         
         if P_rec_i["total_count"] > 0:
             # if at least one of the conditions is satisfied, initialize the results for single variable
-            setattr(results, P_rec_i["target"], SingleVariable_Results(P_rec_i))
+            setattr(results, P_rec_i["column_name"], SingleVariable_Results(P_rec_i))
 
     return L_REC_0, L_REC, L_REC_1, results      # list of recordings at the beginning of the simulation, during the simulation, and at the end of the simulation
 
@@ -81,10 +81,10 @@ def single_save(G, P_rec_i, results, internal_tick = -10):
         print("ERROR: " + saving_fct_name + " not found")
     
     RES = saving_function(G, P_rec_i)
-    target  = P_rec_i["target"]
+    col_name  = P_rec_i["column_name"]
 
     idx = (internal_tick  +   (P_rec_i["END"]=="True"))   *  (1 - (internal_tick == -1))
-    getattr(results,target).data[idx] = RES             # RES  is saved in position idx of results.name.data
+    getattr(results,col_name).data[idx] = RES             # RES  is saved in position idx of results.name.data
 
 def batch_save(G, P_rec_i, results, internal_tick = -10, T=500):
     saving_fct_name = P_rec_i["func"]
@@ -94,70 +94,70 @@ def batch_save(G, P_rec_i, results, internal_tick = -10, T=500):
         print("ERROR: " + saving_fct_name + " not found")
     
     RES = saving_function(G, P_rec_i)
-    target  = P_rec_i["target"]
+    col_name  = P_rec_i["column_name"]
     
     next_internal_tick = (internal_tick // P_rec_i["DT"])*P_rec_i["DT"] + P_rec_i["DT"]
     idx = (next_internal_tick  +   (P_rec_i["END"]=="True"))
     
     if type(RES) == list:
-        getattr(results,target).data[idx:] = [RES for _ in np.arange(next_internal_tick,T+1,P_rec_i["DT"])]            # RES  is saved in all subsequent positions of results.name.data
+        getattr(results,col_name).data[idx:] = [RES for _ in np.arange(next_internal_tick,T+1,P_rec_i["DT"])]            # RES  is saved in all subsequent positions of results.name.data
         if P_rec_i["END"] == "True":
-            getattr(results,target).data[0] = [RES]
+            getattr(results,col_name).data[0] = [RES]
     else:    
-        getattr(results,target).data[idx:] = RES             # RES  is saved in all subsequent positions of results.name.data
+        getattr(results,col_name).data[idx:] = RES             # RES  is saved in all subsequent positions of results.name.data
         if P_rec_i["END"] == "True":
-            getattr(results,target).data[0] = RES
+            getattr(results,col_name).data[0] = RES
 
 
 def save_ALL(G,P_rec):
-    RES = G[P_rec["layer"]].vs[P_rec["target"]]
+    RES = G[P_rec["layer"]].vs[P_rec["attribute"]]
     return RES
 
 def save_mean(G,P_rec):
-    RES = np.mean(G[P_rec["layer"]].vs[P_rec["target"]])
+    RES = float(np.mean(G[P_rec["layer"]].vs[P_rec["attribute"]]))
     return RES
 
 def save_median(G,P_rec):
-    RES = np.median(G[P_rec["layer"]].vs[P_rec["target"]])
+    RES = float(np.median(G[P_rec["layer"]].vs[P_rec["attribute"]]))
     return RES
 
 def save_var(G,P_rec):
-    RES = np.var(G[P_rec["layer"]].vs[P_rec["target"]])
+    RES = float(np.var(G[P_rec["layer"]].vs[P_rec["attribute"]]))
     return RES
 
 # add other polarization measures: Esteban Ray, std of pairwise differences, etc.
 
 def save_max(G,P_rec):
-    RES = np.max(G[P_rec["layer"]].vs[P_rec["target"]])
+    RES = float(np.max(G[P_rec["layer"]].vs[P_rec["attribute"]]))
     return RES
 
 def save_min(G,P_rec):
-    RES = np.min(G[P_rec["layer"]].vs[P_rec["target"]])
+    RES = float(np.min(G[P_rec["layer"]].vs[P_rec["attribute"]]))
     return RES
 
 def save_frac(G,P_rec):
-    RES =np.sum(np.array(G[P_rec["layer"]].vs[P_rec["target"]]) == P_rec["target_fraction"])/len(G[P_rec["layer"]].vs[P_rec["target"]])
+    RES = float(np.sum(np.array(G[P_rec["layer"]].vs[P_rec["attribute"]]) == P_rec["attribute_value"])/len(G[P_rec["layer"]].vs[P_rec["attribute"]]))
     return RES
 
 def save_histogram(G,P_rec):
-    RES = np.histogram(G[P_rec["layer"]].vs[P_rec["target"]])
+    RES = np.histogram(G[P_rec["layer"]].vs[P_rec["attribute"]])
     return RES
 
 def save_homophily(G,P_rec):
-    RES = calc_homophily(G[P_rec["layer"]], P_rec["target"])
+    RES = float(calc_homophily(G[P_rec["layer"]], P_rec["attribute"]))
     return RES
 
 def save_homophily_rescaled(G,P_rec):
-    RES = calc_homophily(G[P_rec["layer"]], P_rec["target"], flag = 1)
+    RES = float(calc_homophily(G[P_rec["layer"]], P_rec["attribute"], flag = 1))
     return RES
 
 def save_homophily_non_rescaled(G,P_rec):
-    RES = calc_homophily(G[P_rec["layer"]], P_rec["target"], flag = 2)
+    RES = float(calc_homophily(G[P_rec["layer"]], P_rec["attribute"], flag = 2))
     return RES
 
 
 def save_fr_local(G,P_rec):
-    RES = fr_local(G[P_rec["layer"]].vs[P_rec["target"]],P_rec["target"])
+    RES = fr_local(G[P_rec["layer"]].vs[P_rec["attribute"]],P_rec["attribute"])
     return RES
 
 def fr_local(g, name, value):
@@ -169,7 +169,7 @@ def fr_local(g, name, value):
     return RES
 
 def save_pol(G,P_rec):
-    RES = calc_polarization(G[P_rec["layer"]], P_rec["target"])
+    RES = calc_polarization(G[P_rec["layer"]], P_rec["attribute"])
     return RES
 
 saving_dictionary = {

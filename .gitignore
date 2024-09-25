@@ -1,6 +1,7 @@
-*.h5
 *.csv
 *.png
+*.pdf
+*.pyc
 PROJECTS/
 OLD things/
 Figures/
