@@ -153,11 +153,6 @@ def init_graph(P_lay):
             if(np.power(p_lay_i["L"],p_lay_i["D"]) != N):
                 print("GRAPH SIZE WARNING: L^D != N: " + str(np.power(p_lay_i["L"],p_lay_i["D"])) + " != " + str(N))
             g = ig.Graph.Watts_Strogatz(dim=p_lay_i["D"], size=p_lay_i["L"], nei=p_lay_i["NFN"], p=p_lay_i["P"])
-        elif p_lay_i["type"] == "WS_MS":
-            #Watts-Strogatz network with Maslov-Sneppen-like rewiring
-            if(np.power(p_lay_i["L"],p_lay_i["D"]) != N):
-                print("GRAPH SIZE WARNING: L^D != N: " + str(np.power(p_lay_i["L"],p_lay_i["D"])) + " != " + str(N))
-            g = ig.Graph.Watts_Strogatz(dim=p_lay_i["D"], size=p_lay_i["L"], nei=p_lay_i["NFN"], p=0)
         elif(p_lay_i["type"] == "kRRG"):
             g = ig.Graph.K_Regular(n = N, k = p_lay_i["k"])
         elif(p_lay_i["type"] == "2islands"):
