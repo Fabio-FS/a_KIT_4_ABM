@@ -144,7 +144,7 @@ def save_histogram(G,P_rec):
     return RES
 
 def save_homophily(G,P_rec):
-    RES = float(calc_homophily(G[P_rec["layer"]], P_rec["attribute"]))
+    RES = float(calc_homophily(G[P_rec["layer"]], P_rec["attribute"], flag = P_rec["rescale_flag"]))
     return RES
 
 def save_homophily_rescaled(G,P_rec):

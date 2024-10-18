@@ -30,9 +30,10 @@ def polarization(B):
 
 
 
-def calc_homophily(g, name = "behavior_status", flag = 0):    # function called by the save_homophily function in Save_Functions.py
+def calc_homophily(g, attribute = "behavior_status", flag = 0):    # function called by the save_homophily function in Save_Functions.py
     A = np.array(g.get_adjacency().data)
-    B = np.array(g.vs[name])
+    B = np.array(g.vs[attribute])
+
     H = homophily_non_rescaled(B,A)
     if(flag == 0):                              # when I call the function with flag = 0, I want to calculate the homophily and rescale it only if the flag is set to 1 in the graph.
         if(g["rescale_homophily_flag"] == 1):
@@ -45,15 +46,17 @@ def calc_homophily(g, name = "behavior_status", flag = 0):    # function called 
 
 
 def homophily_non_rescaled(B,A):
+    #A is the adjacency matrix, B the vector of quantity of interest
     H = 0
-    for i in range(len(B)):      
-        H = H + np.sum(A[:,i].dot(0.5-np.power(B[i]-B,2)))
+    for i in range(len(B)):   #looping over all nodes
+        H = H + np.sum(        A[:,i].dot(        0.5 - np.power(B[i]-B,2)    ))
+                          #i-th column of A             squared differences
     H = 2*H/np.sum(A)
     return H
 
 def rescale_H(B,A, N_trials = 100):
     L = len(B)
-    A2 = np.ones([L,L])-np.diag(np.ones(L))
+    A2 = np.ones([L,L])-np.diag(np.ones(L))    #adjacency matrix of complete graph
     dummy_resc = homophily_non_rescaled(B,A2)              # very good approximation of the rescaling factor. It's much faster than the exact calculation.
         
     #res = 0

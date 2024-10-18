@@ -56,7 +56,7 @@ def update_upward(G,rule, global_var):
     #------------------------------------------------------------------------------------------------------------------------------#
     #second: update the betas and awarenesses
     rr1 = np.random.uniform(low=0, high=1, size=g_b.vcount())
-    g_b.vs["behavior"] = (np.array(g_b.vs["probability"]) > rr1).tolist()
+    g_b.vs["behavior"] = (np.array(g_b.vs["probability"]) > rr1).astype(int).tolist()
     g_b.vs["beta"] = ((1-max_behavior*np.array(g_b.vs["behavior"]))*beta0).tolist()
 
     #------------------------------------------------------------------------------------------------------------------------------#
@@ -151,7 +151,7 @@ def update_upward_nocorr(G,rule, global_var):
     #------------------------------------------------------------------------------------------------------------------------------#
     #second: update the betas and awarenesses
     rr1 = np.random.uniform(low=0, high=1, size=g_b.vcount())
-    g_b.vs["behavior"] = (np.array(g_b.vs["probability"]) > rr1).tolist()
+    g_b.vs["behavior"] = (np.array(g_b.vs["probability"]) > rr1).astype(int).tolist()
     g_b.vs["beta"] = ((1-max_behavior*np.array(g_b.vs["behavior"]))*beta0).tolist()
 
     #------------------------------------------------------------------------------------------------------------------------------#
@@ -340,7 +340,7 @@ def update_upward_Heav(G,rule, global_var):
     #------------------------------------------------------------------------------------------------------------------------------#
     #second: update the betas and awarenesses
     rr1 = np.random.uniform(low=0, high=1, size=g_b.vcount())
-    g_b.vs["behavior"] = (np.array(g_b.vs["probability"]) > rr1).tolist()
+    g_b.vs["behavior"] = (np.array(g_b.vs["probability"]) > rr1).astype(int).tolist()
     g_b.vs["beta"] = ((1-max_behavior*np.array(g_b.vs["behavior"]))*beta0).tolist()
 
     #------------------------------------------------------------------------------------------------------------------------------#
@@ -532,7 +532,7 @@ def update_downward_nocorr(G,rule, global_var):
     #------------------------------------------------------------------------------------------------------------------------------#
     #second: update the betas and awarenesses
     rr1 = np.random.uniform(low=0, high=1, size=g_b.vcount())
-    g_b.vs["behavior"] = (np.array(g_b.vs["probability"]) > rr1).tolist()
+    g_b.vs["behavior"] = (np.array(g_b.vs["probability"]) > rr1).astype(int).tolist()
     g_b.vs["beta"] = ((1-max_behavior*np.array(g_b.vs["behavior"]))*beta0).tolist()
 
     #------------------------------------------------------------------------------------------------------------------------------#
@@ -620,7 +620,7 @@ def update_downward_Heav(G,rule, global_var):
     #------------------------------------------------------------------------------------------------------------------------------#
     #second: update the betas and awarenesses
     rr1 = np.random.uniform(low=0, high=1, size=g_b.vcount())
-    g_b.vs["behavior"] = (np.array(g_b.vs["probability"]) > rr1).tolist()
+    g_b.vs["behavior"] = (np.array(g_b.vs["probability"]) > rr1).astype(int).tolist()
     g_b.vs["beta"] = ((1-max_behavior*np.array(g_b.vs["behavior"]))*beta0).tolist()
 
     #------------------------------------------------------------------------------------------------------------------------------#
@@ -759,7 +759,7 @@ def update_dow_mov(G,rule, global_var):
     #------------------------------------------------------------------------------------------------------------------------------#
     #fourth: update the betas and awarenesses
     rr1 = np.random.uniform(low=0, high=1, size=g_b.vcount())
-    g_b.vs["behavior"] = (np.array(g_b.vs["probability"]) > rr1).tolist()
+    g_b.vs["behavior"] = (np.array(g_b.vs["probability"]) > rr1).astype(int).tolist()
     g_b.vs["beta"] = ((1-max_behavior*np.array(g_b.vs["behavior"]))*beta0).tolist()
 
 def update_static(G,rule, global_var):
@@ -798,8 +798,8 @@ def update_static(G,rule, global_var):
     #------------------------------------------------------------------------------------------------------------------------------#
     #second: update the betas and awarenesses
     rr1 = np.random.uniform(low=0, high=1, size=g_b.vcount())
-    g_b.vs["behavior"] = (np.array(g_b.vs["probability"]) > rr1)
-    g_b.vs["beta"] = (1-max_behavior*np.array(g_b.vs["behavior"]))*beta0
+    g_b.vs["behavior"] = (np.array(g_b.vs["probability"]) > rr1).astype(int).tolist()
+    g_b.vs["beta"] = ((1-max_behavior*np.array(g_b.vs["behavior"]))*beta0).tolist()
 
     #------------------------------------------------------------------------------------------------------------------------------#
     #third: calculate update of health status
