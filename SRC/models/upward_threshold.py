@@ -290,7 +290,7 @@ def update_upw_mov(G,rule, global_var):
     #------------------------------------------------------------------------------------------------------------------------------#
     #fourth: update the betas and awarenesses
     rr1 = np.random.uniform(low=0, high=1, size=g_b.vcount())
-    g_b.vs["behavior"] = (np.array(g_b.vs["probability"]) > rr1).tolist()
+    g_b.vs["behavior"] = (np.array(g_b.vs["probability"]) > rr1).astype(int).tolist()
     g_b.vs["beta"] = ((1-max_behavior*np.array(g_b.vs["behavior"]))*beta0).tolist()
 
 
@@ -436,8 +436,8 @@ def update_downward(G,rule, global_var):
     #------------------------------------------------------------------------------------------------------------------------------#
     #second: update the betas and awarenesses
     rr1 = np.random.uniform(low=0, high=1, size=g_b.vcount())
-    g_b.vs["behavior"] = (np.array(g_b.vs["probability"]) > rr1)
-    g_b.vs["beta"] = (1-max_behavior*np.array(g_b.vs["behavior"]))*beta0
+    g_b.vs["behavior"] = (np.array(g_b.vs["probability"]) > rr1).astype(int).tolist()
+    g_b.vs["beta"] = ((1-max_behavior*np.array(g_b.vs["behavior"]))*beta0).tolist()
 
     #------------------------------------------------------------------------------------------------------------------------------#
     #third: calculate update of health status
@@ -925,6 +925,7 @@ def init_static(P_dyn, G, global_var):
     G[bl].vs["beta"] = np.full( shape=len(G[bl].vs), fill_value = P_dyn["HEALTH"]["beta0"])
     G[bl].vs["probability"] = np.full( shape=len(G[bl].vs), fill_value = P_dyn["BEHAVIOR"]["static_probability"])
     G[hl].vs["I_peak"] = 0
+    G[bl].vs["behavior"] = 0
 
     rule  = {
         'func': P_dyn["func"],

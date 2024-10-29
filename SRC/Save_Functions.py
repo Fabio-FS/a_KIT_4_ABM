@@ -144,15 +144,15 @@ def save_histogram(G,P_rec):
     return RES
 
 def save_homophily(G,P_rec):
-    RES = float(calc_homophily(G[P_rec["layer"]], P_rec["attribute"], flag = P_rec["rescale_flag"]))
+    RES = float(calc_homophily(G[P_rec["layer"]], P_rec["attribute"], flag = P_rec["recenter_flag"], qs = P_rec["qs"], category = P_rec["is_category"]))
     return RES
 
 def save_homophily_rescaled(G,P_rec):
-    RES = float(calc_homophily(G[P_rec["layer"]], P_rec["attribute"], flag = 1))
+    RES = float(calc_homophily(G[P_rec["layer"]], P_rec["attribute"], flag = 1, qs = P_rec["qs"], category = P_rec["is_category"]))
     return RES
 
 def save_homophily_non_rescaled(G,P_rec):
-    RES = float(calc_homophily(G[P_rec["layer"]], P_rec["attribute"], flag = 2))
+    RES = float(calc_homophily(G[P_rec["layer"]], P_rec["attribute"], flag = 2, qs = P_rec["qs"], category = P_rec["is_category"]))
     return RES
 
 
@@ -187,10 +187,10 @@ saving_dictionary = {
     "fraction" : save_frac,
     "hist" : save_histogram,
     "histogram" : save_histogram,
+    "hom" : save_homophily, 
     "homophily" : save_homophily,
     "homophily_rescaled" : save_homophily_rescaled,
     "homophily_non_rescaled" : save_homophily_non_rescaled,
-    "hom" : save_homophily,
     "fr_local" : save_fr_local,
     "pol" : save_pol,
     "polarization" : save_pol

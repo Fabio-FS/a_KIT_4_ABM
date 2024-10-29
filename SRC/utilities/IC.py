@@ -54,7 +54,7 @@ def set_continuous_initial_condition(IC, name, g):
                                 N_steps = IC["homophily"]["steps"],
                                 return_H_hist = IC["homophily"]["return_H_hist"],
                                 dbg = IC["homophily"]["debug"],
-                                rescale = IC["homophily"]["rescale"])
+                                recenter = IC["homophily"]["recenter"])
         save_results_for_range_pol_hom(results, g, IC["homophily"]["debug"],IC["homophily"]["return_H_hist"])
 
 
