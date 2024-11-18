@@ -151,6 +151,8 @@ def update_upward_nocorr(G,rule, global_var):
     #second: update the betas and awarenesses
     rr1 = np.random.uniform(low=0, high=1, size=g_b.vcount())
     g_b.vs["behavior"] = (np.array(g_b.vs["probability"]) > rr1).astype(int).tolist()
+    if N_infected == 0:
+        g_b.vs["behavior"] = 0 #not completely true to the model but doesn't change any macro prediction and speeds up simulations dramatically (probably)
     g_b.vs["beta"] = ((1-max_behavior*np.array(g_b.vs["behavior"]))*beta0).tolist()
 
     #------------------------------------------------------------------------------------------------------------------------------#
@@ -505,7 +507,6 @@ def update_downward_nocorr(G,rule, global_var):
     a_pn = rule["a_pn"]
     a_Ni = rule["a_Ni"]
     a_Bi = rule["a_Bi"]
-    a_corr = rule["a_corr"]
     pn_thr = rule["pn_thr"]
     Ni_thr = rule["Ni_thr"]
     Bi_thr = rule["Bi_thr"]
