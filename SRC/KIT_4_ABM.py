@@ -155,6 +155,8 @@ def init_graph(P_lay):
             g = ig.Graph.Watts_Strogatz(dim=p_lay_i["D"], size=p_lay_i["L"], nei=p_lay_i["NFN"], p=p_lay_i["P"])
         elif(p_lay_i["type"] == "kRRG"):
             g = ig.Graph.K_Regular(n = N, k = p_lay_i["k"])
+        elif(p_lay_i["type"] == "BA"):
+            g = ig.Graph.Barabasi(n = N, m =  p_lay_i["m"])
         elif(p_lay_i["type"] == "2islands"):
 
             p = p_lay_i["p"]
