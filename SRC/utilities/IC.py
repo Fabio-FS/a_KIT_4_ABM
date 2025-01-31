@@ -5,20 +5,20 @@ from Hom_and_pol import *
 import os
 
 
-def set_disease_initial_condition(IC, name, g):
+def set_disease_initial_condition(IC, attribute, g):
     if(IC["type"] == "random"):
-        g.vs[name]=1
+        g.vs[attribute]=1
         # select N_pat_zero nodes at random and set them to 2:
         for gg in rn.sample(range(len(g.vs)), IC["N_pat_zero"]):
 
-            g.vs[gg][name] = 2
+            g.vs[gg][attribute] = 2
     elif(IC["type"] == "central_geometric"):
-        g.vs[name]=1
+        g.vs[attribute]=1
         # select N_pat_zero nodes at random and set them to 2:
         gg = int(np.floor(len(g.vs)/2))
-        g.vs[gg][name] = 2
+        g.vs[gg][attribute] = 2
     elif(IC["type"] == "vector"):
-        g.vs[name] = IC["values"]
+        g.vs[attribute] = IC["values"]
     else:
         print("INITALIZATION RULE: " + IC["type"] + " NOT IMPLEMENTED YET! NUUUUUU")
 
