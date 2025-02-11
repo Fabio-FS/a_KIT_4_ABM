@@ -76,6 +76,7 @@ def init_graph(P_lay):
             g = ig.Graph.Lattice(dim=[p_lay_i["Lx"], p_lay_i["Ly"]], circular=False, nei = p_lay_i["nei"])
         elif(p_lay_i["type"] == "Moore_Lattice"):
             #a lattice with Moore neighborhood, i.e. 8 neighbors
+            #a Cellular automaton
             #number of agents
             N = p_lay_i["Lx"]*p_lay_i["Ly"]
             #set up adjacency matrix
@@ -86,8 +87,15 @@ def init_graph(P_lay):
             #NW-SE:      +x+1
             #NE-SW:      +x-1 (conflict with horiz. if x=2)
 
-            if p_lay_i["Lx"] == 2:
-                #special treatment because of NE-SW connections
+            if p_lay_i["Lx"] == 1:
+                #special case: line graph
+                A += np.diag(np.ones(shape = N-1), 1 )    #→→→→ vertical = horizontal conections +1 (in adj matrix: one off the diagonal)
+                if p_lay_i["circular"]:
+                    A[0,N-1] = 1
+                A += A.T
+                 
+            elif p_lay_i["Lx"] == 2:
+                #special treatment because: ↙↙ NE-SW connections are same distance as →→ horizontal connections
                 for i in range(N):
                     if i == 0:   #first row
                         A[i,:4] = np.array([0,1,1,1])
@@ -100,7 +108,7 @@ def init_graph(P_lay):
                     elif i%2 == 0:                             #every second row
                         print(i,2*(i//2)-2)
                         A[i,2*(i//2)-2:2*(i//2)-2+6] = np.array([1,1,0,1,1,1])
-                    else:
+                    else:                                      #every other second row
                         A[i,2*(i//2)-2:2*(i//2)-2+6] = np.array([1,1,1,0,1,1])
                 if p_lay_i["circular"] == "True":
                     A[N-1,1] = 1    #connnecting last agent with 2nd
@@ -109,44 +117,65 @@ def init_graph(P_lay):
                     A[N-2,1] = 1    #connecting 2nd to last agent with 2nd
                 A += A.T
                 A = np.clip(A,a_min=0,a_max=1)
-            else:   #xdim is not 2
-                A += np.diag(np.ones(shape = N-1),1 )    #horizontal conections, one off the diagonal
-                A[-p_lay_i["Lx"]+np.arange(p_lay_i["Lx"], N, 1)   ,   np.arange(p_lay_i["Lx"], N, 1)]   =   1     #vertical
-                A[-p_lay_i["Lx"]-1 + np.arange(p_lay_i["Lx"]+1,N,1)   ,   np.arange(p_lay_i["Lx"]+1,N,1)]  =  1    #NW-SE
-                A[-p_lay_i["Lx"]+1 + np.arange(p_lay_i["Lx"],N,1)   ,   np.arange(p_lay_i["Lx"],N,1)]  =  1    #NE-SW
-                
+
+            else:   #xdim is > 2
+                Lx = p_lay_i["Lx"]
+                #examples always N=9, Lx=3
+
+                #adding 1s to adjacency matrix
+                #including few ones that have to be deleted again
+                A += np.diag(np.ones(shape = N-1), 1 )                            #→→→→ horizontal conections +1 (in adj matrix: one off the diagonal)
+                A[np.arange(0, N-Lx,   1)   ,   np.arange(Lx,   N, 1)]   =   1    #↓↓↓↓  vertical    +x
+                #e.g.    0,1,2,3,4,5                  3,4,5,6,7,8      
+                A[np.arange(0, N-Lx-1, 1)   ,   np.arange(Lx+1, N, 1)]   =   1    # ↘↘↘↘  NW-SE       +x+1
+                #e.g.    0,1,2,3,4                    4,5,6,7,8
+                A[np.arange(0, N-Lx+1, 1)   ,   np.arange(Lx-1,   N, 1)]   =   1    # ↙↙↙↙ NE-SW       +x-1
+                #e.g.    0,1,2,3,4,5,6                  2,3,4,5,6,7,8
+
+                #making adjacency matrix symmetric
                 A += A.T
 
-                if p_lay_i["Lx"]>1:   #otherwise I will delete the vertical connections here, because for x=2:   x-1 = 1
-                    A[np.arange(p_lay_i["Lx"]-1,N-1,p_lay_i["Lx"]),np.arange(p_lay_i["Lx"],N,p_lay_i["Lx"])] = 0 # horizontal correction
-                A[-p_lay_i["Lx"]-1+np.arange(2*p_lay_i["Lx"],N,p_lay_i["Lx"] )   ,   np.arange(2*p_lay_i["Lx"],N,p_lay_i["Lx"] )] = 0   #NW-SE correction
-                A[np.arange(0,N,p_lay_i["Lx"])   ,   p_lay_i["Lx"]-1+np.arange(0,N,p_lay_i["Lx"])] = 0 #NW-SE   correction
-
+                #corrections:
+                #1. →→→→ horizontal correction, removing "connections through line break"
+                A[ np.arange(Lx-1, N-1, Lx)   ,   np.arange(Lx, N, Lx)]  = 0      
+                #e.g.        2,5                              3,6
+                #
+                #2. ↘↘↘↘ NW-SE correction;     removing connection from rightmost in one line to leftmost 2 lines below
+                A[ np.arange(Lx-1, N-Lx-1, Lx )   ,   np.arange(2*Lx,N,Lx )] = 0
+                #e.g.        2                                  6
+                #
+                #3. ↙↙↙↙ NE-SW   correction:    removing connection between left-most and right-most in same line   
+                if not p_lay_i["circular"]:
+                    A[np.arange(0,N,Lx)   ,   np.arange(Lx-1,N+Lx-1,Lx)] = 0        
+                    #e.g.     0,3,6                      2,5,8  
+                    
+                #removing these connections also in reverse direction
                 A *= A.T
 
+                #adding connections for circular lattices
                 if p_lay_i["circular"] == "True":
-                    #A_pre = np.copy(A[:,:])
-                    #print(A)
-                    A[np.arange(0,p_lay_i["Lx"],1)     ,    np.arange(N-p_lay_i["Lx"],N,1)]    =   1    #adding vertical connections
-                    #print(np.arange(0,p_lay_i["Lx"],1)     ,    np.arange(N-p_lay_i["Lx"],N,1))
-                    #print(A)
-                    #print(A-A_pre)
-                    if p_lay_i["Lx"] > 1:
-                        A[np.arange(p_lay_i["Lx"]-1,N,p_lay_i["Lx"])   ,   np.arange(0,N,p_lay_i["Lx"])]   =   1   #adding horizontal connections
-                        #if x dimension is bigger than 1, otherwise I introduce self loops here
-                        A[np.arange(p_lay_i["Lx"]-1,N-p_lay_i["Lx"],p_lay_i["Lx"])    ,   1+np.arange(p_lay_i["Lx"]-1,N-p_lay_i["Lx"],p_lay_i["Lx"])]   =   1   #adding NW-SE connections on the right edge
-                        A[N-1,0] = 1   #connecting right-bottom to top-left
-                        A[p_lay_i["Lx"]-1,N-p_lay_i["Lx"]] = 1
-                        #print(p_lay_i["Lx"]-1,N-p_lay_i["Lx"])
-                        #print(np.arange(2*p_lay_i["Lx"]-1,N,p_lay_i["Lx"])    ,   np.arange(0,N-p_lay_i["Lx"]+1,p_lay_i["Lx"]))
-                        A[np.arange(2*p_lay_i["Lx"]-1,N,p_lay_i["Lx"])    ,   np.arange(0,N-p_lay_i["Lx"],p_lay_i["Lx"])]   =   1   #adding NE-SW connections on the right edge
-                        A[np.arange(N-p_lay_i["Lx"],N-1,1)    ,    np.arange(1,p_lay_i["Lx"],1)]   =  1   #adding NE-SW connecs in bottom row
-                        A[np.arange(N-p_lay_i["Lx"]+1,N,1)    ,    np.arange(0,p_lay_i["Lx"]-1,1)]   =  1   #adding NW-SE connecs in bottom row
-                        #print(np.arange(N-p_lay_i["Lx"],N-1,1)    ,    np.arange(1,p_lay_i["Lx"],1))
-                        #print(np.arange(N-p_lay_i["Lx"]+1,N,1)    ,    np.arange(0,p_lay_i["Lx"]-1,1))
+
+                    #1. ↓↓↓↓ adding vertical connections between first and last line
+                    A[np.arange(0,Lx,1)     ,    np.arange(N-Lx,N,1)]    =   1
+                    #e.g.       0,1,2                      6,7,8
+                    #
+                    #2. ↘↘↘↘ adding NW-SE connections on the right edge
+                    A[np.arange(Lx-1,N,Lx)    ,   np.mod(np.arange(Lx,N+1,Lx),N)]   =   1
+                    #e.g.       2,5,8                            3,6,9mod9=0
+                    #
+                    #3. ↙↙↙↙ adding NE-SW connections on right edge
+                    A[np.arange(Lx-1,N,Lx)    ,   np.mod(np.arange(-Lx,N-Lx,Lx),N)]   =   1
+                    #e.g.        2,5,8                           6,0,3   (-3,0,3)
+                    #
+                    #4. ↘↘↘↘ adding NW-SE connections in bottom row, except bottom-right
+                    A[np.arange(N-Lx,N-1,1)    ,    np.arange(1,Lx,1)]   =  1
+                    #e.g.        6,7                      1,2
+                    #5. ↙↙↙↙ adding NW-SE connecs in bottom row, except bottom-left
+                    A[np.arange(N-Lx+1,N,1)    ,    np.arange(0,Lx-1,1)]   =  1
+                    #e.g.        7,8                           0,1
+
                     A += A.T
                     A = np.clip(A,a_min=0,a_max=1)
-                    #print(A)
             A = np.asarray(A, dtype=int)
             g = ig.Graph.Adjacency(A, mode="undirected")
         elif(p_lay_i["type"] == "WS"):
