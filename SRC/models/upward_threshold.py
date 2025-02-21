@@ -238,6 +238,8 @@ def update_upw_mov(G,rule, global_var):
 
     if global_var.first_tick == False:
         #health update will not be carried out in the very first step
+        #that is why I need a special function for movies upw_MOV UPW_MOV
+        #so I can record the initial condition
         #------------------------------------------------------------------------------------------------------------------------------#
         #first: calculate update of health status
 
