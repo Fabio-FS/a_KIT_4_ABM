@@ -9,7 +9,7 @@ def write_csv(P_rec, res):
             file_exists = any(reader)
     except FileNotFoundError:
         file_exists = False
-
+        
     with open(filename, 'a', newline='') as csvfile:
         # Extract attribute names ending with '.data'
         fieldnames = [attr for attr in dir(res) if hasattr(getattr(res, attr), 'data')]
