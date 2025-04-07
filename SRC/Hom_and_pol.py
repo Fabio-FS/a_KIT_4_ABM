@@ -30,7 +30,7 @@ def polarization(B):
 
 
 
-def calc_homophily(g, attribute = "behavior_status", flag = 0, qs = 1, category = 0):    # function called by the save_homophily function in Save_Functions.py
+def calc_homophily(g, attribute = "behavior_status", flag = 0, qs = 1, is_category = 0):    # function called by the save_homophily function in Save_Functions.py
     #category is an integer misused as a boolean.
     #   It describes if homophily should be evaluated in terms of metric distance or categories
     #qs is a scaling factor for the quantity
@@ -42,8 +42,8 @@ def calc_homophily(g, attribute = "behavior_status", flag = 0, qs = 1, category 
     A = np.array(g.get_adjacency().data)
     B = np.array(g.vs[attribute])
 
-    hom_n_rc = [homophily_non_recentered,cat_homophily_non_recentered][category]
-    rc_H = [recenter_H,cat_recenter_H][category]
+    hom_n_rc = [homophily_non_recentered,cat_homophily_non_recentered][is_category]
+    rc_H = [recenter_H,cat_recenter_H][is_category]
 
     H = hom_n_rc(B,A, qs = qs)
     if(flag == 0):                              # when I call the function with flag = 0, I want to calculate the homophily and recenter it only if the flag is set to 1 in the graph.
@@ -93,21 +93,30 @@ def cat_recenter_H(B,A, qs = 1):
 
 
 
-def metropolis(g, name =  "behavior_status", target = 0, N_steps = 10, tollerance = 1e-4, return_H_hist = False, dbg = False, recenter = False):
+def metropolis(g, attribute =  "behavior_status",
+               hom_target = 0, recenter = False,
+               N_steps = 10, tolerance = 1e-4,
+               return_H_hist = False, dbg = False,
+               is_category = 0
+               ):
+    #N_steps: the maximum number of switching steps
 
     # initialize the history of all the behaviors, this IS VERY MEMORY INTENSIVE. for each time-step of the metropolis algorithm, we store the behavior of all the nodes.
     if(dbg):
         hist_B = np.zeros([N_steps,len(g.vs)])
     
-    Hs, B, A, L, m2 = initialize(g, name, N_steps)  # history of homophily, vector of behaviors, adjacency matrix, number of nodes, 2/sum(A)
+    Hs, B, A, L, m2 = initialize(g, attribute, N_steps)  # history of homophily, vector of behaviors, adjacency matrix, number of nodes, 2/sum(A)
     count = 0
     k12 = np.random.choice(np.arange(L), [N_steps,2])
 
-    Hs[0] = homophily_non_recentered(B,A)
+    hom_n_rc = [homophily_non_recentered,cat_homophily_non_recentered][is_category]
+    rc_H = [recenter_H,cat_recenter_H][is_category]
+    Hs[0] = hom_n_rc(B,A)
+    #HS[0] = calc_homophily()
+
     #print("Initial homophily: ", Hs[0], "Target: ", target, "m2: ", m2)
     if (recenter):
-        resc = recenter_H(B,A)
-        Hs[0] = Hs[0] + resc
+        Hs[0] = Hs[0] + rc_H(B,A)
         g["recenter_homophily_flag"] = 1         # I add a flag to the graph to remember that I recentered the homophily. It's quite ugly, but it's the only way I found to keep track of it.
                                                         # it is needed in the calc_homophily function.
         
@@ -128,7 +137,7 @@ def metropolis(g, name =  "behavior_status", target = 0, N_steps = 10, tolleranc
             #print("Step: ", count)
         #error = np.abs(Hs[count]-target)
         #print("Error: ", error)
-        if(tollerance < np.abs(Hs[count]-target)):
+        if(tolerance < np.abs(Hs[count]-hom_target)):
             #print("try")
             i, j = k12[count,0], k12[count,1]
             B2 = B.copy()
@@ -138,7 +147,7 @@ def metropolis(g, name =  "behavior_status", target = 0, N_steps = 10, tolleranc
             h_attempt = Hs[count]+dh
 
             
-            if(np.abs(Hs[count]-target)>=np.abs(h_attempt-target)):
+            if(np.abs(Hs[count]-hom_target)>=np.abs(h_attempt-hom_target)):
                 #print("Accepted move: ", count, ", H moved of ", h_attempt-Hs[count])  
                 Hs[count+1] = h_attempt
                 B[i], B[j] = B[j], B[i]
@@ -152,7 +161,7 @@ def metropolis(g, name =  "behavior_status", target = 0, N_steps = 10, tolleranc
             Hs[count+1] = Hs[count]
             count = count +1
     Hs = Hs
-    g.vs[name] = B
+    g.vs[attribute] = B
 
     
 

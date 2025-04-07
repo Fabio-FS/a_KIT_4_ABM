@@ -13,6 +13,11 @@ def set_disease_initial_condition(IC, attribute, g):
 
             g.vs[gg][attribute] = 2
     elif(IC["type"] == "central_geometric"):
+        if IC["N_pat_zero"] != 1:
+            print("\n")
+            print("WARNING: Will always initialize with exactly 1 patient zero when type is central_geometric.")
+            print("(Even though N_pat_zero is set to"+str(IC["N_pat_zero"])+")")
+            print("\n")
         g.vs[attribute]=1
         # select N_pat_zero nodes at random and set them to 2:
         gg = int(np.floor(len(g.vs)/2))
@@ -26,12 +31,15 @@ def set_disease_initial_condition(IC, attribute, g):
 
 # implementation of the initial conditions. Used for continuous dynamics
 
-def set_continuous_initial_condition(IC, name, g):
+def set_continuous_initial_condition(IC, attribute, g, vector_from_init_fct = None):
     
 
-    if(IC["type"] == "random_uniform"):
-        g.vs[name]=np.random.uniform(IC["Low"],IC["High"],len(g.vs))
-    elif(IC["type"] == "random_beta"):
+    if not vector_from_init_fct is None:
+        g.vs[attribute] = vector_from_init_fct
+    elif(IC["distribution"] == "random_uniform"):
+        #25-04-07: in older parameter files, this might still be "type"
+        g.vs[attribute]=np.random.uniform(IC["Low"],IC["High"],len(g.vs))
+    elif(IC["distribution"] == "random_beta"):
         # if alpha is not defined, sets it to be equal to beta, and viceversa
         if("alpha" not in IC):
             a, b = IC["beta"], IC["beta"]
@@ -41,21 +49,25 @@ def set_continuous_initial_condition(IC, name, g):
             a, b = IC["alpha"], IC["beta"]
 
         VECTOR_INIT = np.random.beta(a,b,len(g.vs))
-        g.vs[name]= VECTOR_INIT
-    elif(IC["type"] == "vector"):
-        g.vs[name] = IC["values"]
+        g.vs[attribute]= VECTOR_INIT
+    elif(IC["dsitribution"] == "vector"):
+        g.vs[attribute] = IC["values"]
     else:
         print("INITALIZATION RULE: " + IC["type"] + " NOT IMPLEMENTED YET! NUUUUUU")
-    if(IC["homophily"]["Flag"] == "True"):
+        
+    if(IC["homophily"]["Flag"] == True):
         # case 1 debug = False, return_H_hist = False
+        dbg = IC["homophily"]["debug"]
+        return_H_hist = IC["homophily"]["return_H_hist"]
+
         results = metropolis(   g, 
-                                name =  name, 
-                                target = IC["homophily"]["target"], 
+                                attribute =  attribute, 
+                                hom_target = IC["homophily"]["hom_target"], 
                                 N_steps = IC["homophily"]["steps"],
-                                return_H_hist = IC["homophily"]["return_H_hist"],
-                                dbg = IC["homophily"]["debug"],
+                                return_H_hist = return_H_hist,
+                                dbg = dbg,
                                 recenter = IC["homophily"]["recenter"])
-        save_results_for_range_pol_hom(results, g, IC["homophily"]["debug"],IC["homophily"]["return_H_hist"])
+        save_results_for_range_pol_hom(results, g, dbg, return_H_hist)
 
 
 

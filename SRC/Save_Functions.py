@@ -40,21 +40,21 @@ def init_recordings(P_recordings, T_max):
 
         if "BEGIN" not in P_rec_i:
             # if BEGIN is not specified, set it to False
-            P_rec_i["BEGIN"] = "False"
+            P_rec_i["BEGIN"] = False
         if "END" not in P_rec_i:
             # if END is not specified, set it to False
-            P_rec_i["END"] = "False"
+            P_rec_i["END"] = False
         if "DT" not in P_rec_i:
             # if DT is not specified, set it to 0
             P_rec_i["DT"] = 0
             # I add to count the number of times 1:DT:T_max is divisible by DT
 
         time_vector_i = []
-        if(P_rec_i["END"] == "True"):
+        if(P_rec_i["END"] == True):
             L_REC_1.append(P_rec_i)
             P_rec_i["total_count"] += 1
             time_vector_i.append(-1)
-        if(P_rec_i["BEGIN"] == "True"):
+        if(P_rec_i["BEGIN"] == True):
             L_REC_0.append(P_rec_i)
             P_rec_i["total_count"] += 1
             time_vector_i.append(0)
@@ -83,7 +83,7 @@ def single_save(G, P_rec_i, results, internal_tick = -10):
     RES = saving_function(G, P_rec_i)
     col_name  = P_rec_i["column_name"]
 
-    idx = (internal_tick  +   (P_rec_i["END"]=="True"))   *  (1 - (internal_tick == -1))
+    idx = (internal_tick  +   (P_rec_i["END"]==True))   *  (1 - (internal_tick == -1))
     getattr(results,col_name).data[idx] = RES             # RES  is saved in position idx of results.name.data
 
 def batch_save(G, P_rec_i, results, internal_tick = -10, T=500):
@@ -97,15 +97,15 @@ def batch_save(G, P_rec_i, results, internal_tick = -10, T=500):
     col_name  = P_rec_i["column_name"]
     
     next_internal_tick = (internal_tick // P_rec_i["DT"])*P_rec_i["DT"] + P_rec_i["DT"]
-    idx = (next_internal_tick  +   (P_rec_i["END"]=="True"))
+    idx = (next_internal_tick  +   (P_rec_i["END"]==True))
     
     if type(RES) == list:
         getattr(results,col_name).data[idx:] = [RES for _ in np.arange(next_internal_tick,T+1,P_rec_i["DT"])]            # RES  is saved in all subsequent positions of results.name.data
-        if P_rec_i["END"] == "True":
+        if P_rec_i["END"] == True:
             getattr(results,col_name).data[0] = [RES]
     else:    
         getattr(results,col_name).data[idx:] = RES             # RES  is saved in all subsequent positions of results.name.data
-        if P_rec_i["END"] == "True":
+        if P_rec_i["END"] == True:
             getattr(results,col_name).data[0] = RES
 
 
@@ -144,15 +144,15 @@ def save_histogram(G,P_rec):
     return RES
 
 def save_homophily(G,P_rec):
-    RES = float(calc_homophily(G[P_rec["layer"]], P_rec["attribute"], flag = P_rec["recenter_flag"], qs = P_rec["qs"], category = P_rec["is_category"]))
+    RES = float(calc_homophily(G[P_rec["layer"]], P_rec["attribute"], flag = P_rec["recenter_flag"], qs = P_rec["qs"], is_category = P_rec["is_category"]))
     return RES
 
-def save_homophily_rescaled(G,P_rec):
-    RES = float(calc_homophily(G[P_rec["layer"]], P_rec["attribute"], flag = 1, qs = P_rec["qs"], category = P_rec["is_category"]))
+def save_homophily_recentered(G,P_rec):
+    RES = float(calc_homophily(G[P_rec["layer"]], P_rec["attribute"], flag = 1, qs = P_rec["qs"], is_category = P_rec["is_category"]))
     return RES
 
-def save_homophily_non_rescaled(G,P_rec):
-    RES = float(calc_homophily(G[P_rec["layer"]], P_rec["attribute"], flag = 2, qs = P_rec["qs"], category = P_rec["is_category"]))
+def save_homophily_non_recentered(G,P_rec):
+    RES = float(calc_homophily(G[P_rec["layer"]], P_rec["attribute"], flag = 2, qs = P_rec["qs"], is_category = P_rec["is_category"]))
     return RES
 
 
@@ -189,8 +189,8 @@ saving_dictionary = {
     "histogram" : save_histogram,
     "hom" : save_homophily, 
     "homophily" : save_homophily,
-    "homophily_rescaled" : save_homophily_rescaled,
-    "homophily_non_rescaled" : save_homophily_non_rescaled,
+    "homophily_recentered" : save_homophily_recentered,
+    "homophily_non_recentered" : save_homophily_non_recentered,
     "fr_local" : save_fr_local,
     "pol" : save_pol,
     "polarization" : save_pol

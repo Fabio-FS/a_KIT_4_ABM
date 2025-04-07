@@ -213,6 +213,13 @@ def update_upw_mov(G,rule, global_var):
     All the values needed for the simulation are already imprinted in the graph G[layer] and in rule
     """
 
+    #I needed this extra function for making movies
+    #the other functions update behavior, update disease, then take snapshot
+    #but in movies, I want to show the behavior that will have an impact on the next step
+    #therefore I update disease, then behavior.
+    #But the first update should still be behavior.
+    #So I am doing    behavior  -  snapshot -  disease,behavior  - snapshot - ....
+
     g_h = G[rule["hl"]]
     g_b = G[rule["bl"]]
 
@@ -686,6 +693,13 @@ def update_dow_mov(G,rule, global_var):
     All the values needed for the simulation are already imprinted in the graph G[layer] and in rule
     """
 
+    #I needed this extra function for making movies
+    #the other functions update behavior, update disease, then take snapshot
+    #but in movies, I want to show the behavior that will have an impact on the next step
+    #therefore I update disease, then behavior.
+    #But the first update should still be behavior.
+    #So I am doing    behavior  -  snapshot -  disease,behavior  - snapshot - ....
+
     g_h = G[rule["hl"]]
     g_b = G[rule["bl"]]
 
@@ -960,6 +974,13 @@ def update_doped_mov(G,rule, global_var):
     All the values needed for the simulation are already imprinted in the graph G[layer] and in rule
     """
 
+    #I needed this extra function for making movies
+    #the other functions update behavior, update disease, then take snapshot
+    #but in movies, I want to show the behavior that will have an impact on the next step
+    #therefore I update disease, then behavior.
+    #But the first update should still be behavior.
+    #So I am doing    behavior  -  snapshot -  disease,behavior  - snapshot - ....
+
     g_h = G[rule["hl"]]
     g_b = G[rule["bl"]]
 
@@ -997,8 +1018,8 @@ def update_doped_mov(G,rule, global_var):
             # generate a random number for each node
             rr=np.random.uniform(low=0, high=1, size=(len(g_h.vs)))
             for i,vertex in enumerate(g_h.vs):
-                # the updated health status is not overwritten immediately into health_status, but it is stored in next_health to avoid updating the health status of a
-                # subsequent node with an updated value. this keeps the update syncronous.
+                # the updated health status is not overwritten immediately into health_status,
+                # the update is stored in next_health, so all health statuses can be updated synchronously
              
                 # for each node i, if it is susceptible, check if it gets infected:
                 if vertex["health_status"]==1:
@@ -1033,6 +1054,7 @@ def update_doped_mov(G,rule, global_var):
 
     for i,vertex in enumerate(g_b.vs):
         protecting_nghbrs = np.mean(np.array(g_b.vs[g_b.neighbors(i)]["behavior"])==1)
+        #vertex["probability"] = vertex["herder"]
         vertex["probability"] = 1 / (1 + np.exp(     (1 - 2*vertex["herder"]) * a_pn * mu     * (protecting_nghbrs       - pn_thr)
                                                    -                            a_Bi * (1-mu) * (vertex["behavior"]      - Bi_thr) 
                                                    - a_Ni*           (N_infected/g_h.vcount() - Ni_thr)))
@@ -1068,19 +1090,27 @@ def init_up_down(P_dyn, G,global_var):
 
     if P_dyn["func"] == "doped+-" or P_dyn["func"] == "doped_MOV":
         #doped as in semiconductors. Herders and contrarians in one network
-        share_herders = P_dyn["BEHAVIOR"]["share_herders"]
+        share_herders = P_dyn["BEHAVIOR"]["IC"]["share_herders"]
+
         herder_icds = np.random.choice(G[bl].vcount(),size=int(share_herders*G[bl].vcount()),replace=False)
         G[bl].vs["herder"] = False
         G[bl].vs[herder_icds]["herder"] = True
+        if P_dyn["BEHAVIOR"]["IC"]["homophily"]["Flag"] == True and 1 != share_herders != 0:    #not doing calculations in homogeneous populations
+            hom = P_dyn["BEHAVIOR"]["IC"]["homophily"]["hom_target"]
+            while not (3*share_herders  >= 4* hom -0.4 and 3*share_herders >= -4*hom -0.4 and 3*share_herders <= 4*hom + 3.4 and 3*share_herders <= -4*hom + 3.4):
+                P_dyn["BEHAVIOR"]["IC"]["homophily"]["hom_target"] = 2* np.random.random() - 1
+                hom = P_dyn["BEHAVIOR"]["IC"]["homophily"]["hom_target"]
+                #WARNING WARNING WARNING WARNING.
+                #This condition is based on a heuristic observation that generally the achievable homophilies satisfy this condition
+                #BUT: this is only valid for the network I am currently using, kRRG k=10
 
 
-        #if P_dyn["func"] == "doped_MOV":
-        #    herder_icds0 = np.array(range(G[bl].vcount())).reshape((31,31))[:,:15].flatten()
-        #    herder_icds1 = np.array(range(G[bl].vcount())).reshape((31,31))[:,15]
-        #    herder_icds1 = np.random.choice(herder_icds1,15,replace=False)
-        #    G[bl].vs["herder"] = False
-        #    G[bl].vs[herder_icds0]["herder"] = True
-        #    G[bl].vs[herder_icds1]["herder"] = True
+            set_continuous_initial_condition(P_dyn["BEHAVIOR"]["IC"], 
+                                             attribute = "herder",
+                                             g = G[bl], 
+                                             vector_from_init_fct = np.int32(np.array(G[bl].vs["herder"])))
+
+            G[bl].vs["herder"] = [bool(x == 1) for x in G[bl].vs["herder"]]
 
     rule  = {
         'func': P_dyn["func"],
@@ -1141,10 +1171,10 @@ def init_static(P_dyn, G, global_var):
     # for each node sets the initial condition
     set_disease_initial_condition(P_dyn["HEALTH"]["IC"], "health_status", G[hl])
     G[hl].vs["next_health"] = G[hl].vs["health_status"]
-    G[bl].vs["beta"] = np.full( shape=len(G[bl].vs), fill_value = P_dyn["HEALTH"]["beta0"])
+    G[bl].vs["beta"] = (np.full( shape=len(G[bl].vs), fill_value = P_dyn["HEALTH"]["beta0"])).astype(float).tolist()
     G[bl].vs["probability"] = np.full( shape=len(G[bl].vs), fill_value = P_dyn["BEHAVIOR"]["static_probability"])
     G[hl].vs["I_peak"] = 0
-    G[bl].vs["behavior"] = 0
+    G[bl].vs["behavior_status"] = 0
 
     rule  = {
         'func': P_dyn["func"],

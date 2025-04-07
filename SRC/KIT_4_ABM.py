@@ -117,7 +117,7 @@ def init_graph(P_lay):
                         A[i,2*(i//2)-2:2*(i//2)-2+6] = np.array([1,1,0,1,1,1])
                     else:                                      #every other second row
                         A[i,2*(i//2)-2:2*(i//2)-2+6] = np.array([1,1,1,0,1,1])
-                if p_lay_i["circular"] == "True":
+                if p_lay_i["circular"] == True:
                     A[N-1,1] = 1    #connnecting last agent with 2nd
                     A[N-2,0] = 1    #connecting 2nd to last agent with first
                     A[N-1,0] = 1    #connnecting last agent with 1st
@@ -160,7 +160,7 @@ def init_graph(P_lay):
                 A *= A.T
 
                 #adding connections for circular lattices
-                if p_lay_i["circular"] == "True":
+                if p_lay_i["circular"] == True:
 
                     #1. ↓↓↓↓ adding vertical connections between first and last line
                     A[np.arange(0,Lx,1)     ,    np.arange(N-Lx,N,1)]    =   1
