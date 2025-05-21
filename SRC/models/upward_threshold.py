@@ -1105,7 +1105,7 @@ def init_up_down(P_dyn, G,global_var):
                 #BUT: this is only valid for the network I am currently using, kRRG k=10
 
 
-            set_continuous_initial_condition(P_dyn["BEHAVIOR"]["IC"], 
+            set_initial_condition(P_dyn["BEHAVIOR"]["IC"], 
                                              attribute = "herder",
                                              g = G[bl], 
                                              vector_from_init_fct = np.int32(np.array(G[bl].vs["herder"])))
