@@ -1,6 +1,5 @@
 import numpy as np
-import igraph as ig
-#from Clustering import *
+#import igraph as ig
 from Hom_and_pol import *
 import os
 
