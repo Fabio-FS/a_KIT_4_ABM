@@ -1302,7 +1302,10 @@ def init_up_down(P_dyn, G,global_var):
         G[bl].vs[herder_idcs]["herder"] = True
         if P_dyn["BEHAVIOR"]["IC"]["homophily"]["Flag"] == True and 1 != share_herders != 0:    #not doing calculations in homogeneous populations
             hom = P_dyn["BEHAVIOR"]["IC"]["homophily"]["hom_target"]
-            while not (3*share_herders  >= 4* hom -0.4 and 3*share_herders >= -4*hom -0.4 and 3*share_herders <= 4*hom + 3.4 and 3*share_herders <= -4*hom + 3.4):
+            while not (3*share_herders >= 4* hom -0.4 and 
+                       3*share_herders >= -4*hom -0.4 and 
+                       3*share_herders <= 4*hom + 3.4 and 
+                       3*share_herders <= -4*hom + 3.4):
                 P_dyn["BEHAVIOR"]["IC"]["homophily"]["hom_target"] = 2* np.random.random() - 1
                 hom = P_dyn["BEHAVIOR"]["IC"]["homophily"]["hom_target"]
                 #WARNING WARNING WARNING WARNING.
