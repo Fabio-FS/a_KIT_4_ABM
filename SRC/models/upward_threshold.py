@@ -673,7 +673,6 @@ def update_downward_Heav(G,rule, global_var):
 
         G[0].vs["I_peak"] = max(G[0].vs["I_peak"][0], np.mean(np.array(G[0].vs["health_status"])==2))
 
-
 def update_dow_mov(G,rule, global_var):
 
     """this simulates an SIR model, an assimilation model desgined to compare to a downward threshold
@@ -1284,14 +1283,11 @@ def init_up_down(P_dyn, G,global_var):
     set_disease_initial_condition(P_dyn["HEALTH"]["IC"], "health_status", G[hl])
     G[hl].vs["next_health"] = G[hl].vs["health_status"]
     G[bl].vs["beta"] = [P_dyn["HEALTH"]["beta0"]]*len(G[bl].vs) #  list(np.full( shape=len(G[bl].vs), fill_value = beta0))
-    G[bl].vs["behavior"] = np.full( shape=len(G[bl].vs), fill_value = 0)
+    G[bl].vs["behavior"] = np.full( shape=len(G[bl].vs), fill_value = 0).tolist()
     G[bl].vs["next_beta"] = np.full( shape=len(G[bl].vs), fill_value = P_dyn["HEALTH"]["beta0"])
     G[hl].vs["I_peak"] = 0
 
-    try:
-        a_corr = P_dyn["BEHAVIOR"]["a_corr"]
-    except:
-        a_corr = 250
+    a_corr = P_dyn["BEHAVIOR"].get("a_corr",None)
 
     if P_dyn["func"] == "doped+-" or P_dyn["func"] == "doped_MOV":
         #doped as in semiconductors. Herders and contrarians in one network
@@ -1382,7 +1378,7 @@ def init_static(P_dyn, G, global_var):
     G[bl].vs["beta"] = (np.full( shape=len(G[bl].vs), fill_value = P_dyn["HEALTH"]["beta0"])).astype(float).tolist()
     G[bl].vs["probability"] = np.full( shape=len(G[bl].vs), fill_value = P_dyn["BEHAVIOR"]["static_probability"])
     G[hl].vs["I_peak"] = 0
-    G[bl].vs["behavior_status"] = 0
+    G[bl].vs["behavior"] = 0
 
     rule  = {
         'func': P_dyn["func"],
