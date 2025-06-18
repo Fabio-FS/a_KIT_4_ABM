@@ -172,8 +172,13 @@ def save_pol(G,P_rec):
     RES = calc_polarization(G[P_rec["layer"]], P_rec["attribute"])
     return RES
 
+def save_ALL_as_int(G,P_rec):
+    RES = np.array(G[P_rec["layer"]].vs[P_rec["attribute"]]).astype(int).tolist()
+    return RES
+
 saving_dictionary = {
     "ALL" : save_ALL,
+    "ALL_int" : save_ALL_as_int,
     "avg" : save_mean,
     "mean" : save_mean,
     "median" : save_median,

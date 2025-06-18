@@ -296,6 +296,7 @@ def run_temporal_evolution(G, list_of_rules, P_simulations, P_recordings,global_
         single_save(G, P_rec_i, results, internal_tick = 0)     # 0 means that the time step is before the simulations begin
 
     for internal_tick in range(1,P_simulations["T"]+1):
+        global_var.current_timestep = internal_tick
 
         if not global_var.stop_condition:
             # for each time step, advance the simulation one increment

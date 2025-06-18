@@ -37,9 +37,10 @@ def set_initial_condition(IC, attribute, g, vector_from_init_fct = None):
     # distributes an attribute on the network, as specified in IC
 
     if not vector_from_init_fct is None:
+        #makes it possible to specify a vector e.g. in the init_function
         g.vs[attribute] = vector_from_init_fct
     elif(IC["distribution"] == "random_uniform"):
-        #25-04-07: in older parameter files, this might still be "type"
+        #25-04-07: in older parameter files, "distribution" might still be "type"
         g.vs[attribute]=np.random.uniform(IC["Low"],IC["High"],len(g.vs))
     elif(IC["distribution"] == "random_beta"):
         # if alpha is not defined, sets it to be equal to beta, and viceversa
@@ -52,7 +53,7 @@ def set_initial_condition(IC, attribute, g, vector_from_init_fct = None):
 
         VECTOR_INIT = np.random.beta(a,b,len(g.vs))
         g.vs[attribute]= VECTOR_INIT
-    elif(IC["dsitribution"] == "vector"):
+    elif(IC["distribution"] == "vector"):
         g.vs[attribute] = IC["values"]
     else:
         print(f"initialization type {IC["type"]} not implemented yet")
