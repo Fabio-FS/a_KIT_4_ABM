@@ -1372,7 +1372,7 @@ def init_static(P_dyn, G, global_var):
     G[hl].vs["I2R"]   = P_dyn["I2R"]                                                            # for each node sets the gamma
     G[bl].vs["PB_susc"] = P_dyn["HEALTH"]["beta0"]
 
-    # for each node sets the initial condition
+    # sets the initial condition for each node
     set_disease_initial_condition(P_dyn["HEALTH"]["IC"], "health_status", G[hl])
     G[hl].vs["next_health"] = G[hl].vs["health_status"]
     G[bl].vs["beta"] = (np.full( shape=len(G[bl].vs), fill_value = P_dyn["HEALTH"]["beta0"])).astype(float).tolist()
@@ -1393,12 +1393,10 @@ def init_model(update_fct_dict, init_fct_dict):
     update_fct_dict["UPW_CORR"] = update_upward
     update_fct_dict["UPW_MOV"] = update_upw_mov
     update_fct_dict["UPW"] = update_upward_nocorr
-    #update_fct_dict["UPW_nocorr_SIS"] = update_upward_nocorr_SIS
     update_fct_dict["UPW_Heav"] = update_upward_Heav  
     update_fct_dict["DOW_CORR"] = update_downward
     update_fct_dict["DOW_MOV"] = update_dow_mov
     update_fct_dict["DOW"] = update_downward_nocorr
-    #update_fct_dict["DOW_nocorr_SIS"] = update_downward_nocorr_SIS
     update_fct_dict["DOW_Heav"] = update_downward_Heav
     update_fct_dict["static"] = update_static
     update_fct_dict["doped+-"] = update_doped
@@ -1411,15 +1409,11 @@ def init_model(update_fct_dict, init_fct_dict):
     init_fct_dict["DOW_MOV"] = init_up_down
     init_fct_dict["UPW"] = init_up_down
     init_fct_dict["DOW"] = init_up_down
-    #init_fct_dict["UPW_nocorr_SIS"] = init_up_down
-    #init_fct_dict["DOW_nocorr_SIS"] = init_up_down
-    init_fct_dict["ANTI"] = init_anti
     init_fct_dict["UPW_Heav"] = init_Heav
     init_fct_dict["DOW_Heav"] = init_Heav
     init_fct_dict["doped+-"] = init_up_down
     init_fct_dict["doped_MOV"] = init_up_down
     init_fct_dict["mix_3"] = init_mix_3_populations
-
 
 
 
