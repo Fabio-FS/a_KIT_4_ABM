@@ -8,6 +8,7 @@ from Init_and_Dynamics import *
 from Save_Functions import *
 from Write_functions_csv import *
 import sys
+from copy import deepcopy
 
 import json
 
@@ -31,10 +32,10 @@ def import_parameters(namefile):
     return P_lay, P_dyn, P_sim, P_rec
 
 def reset_param(P_lay_original,P_sim_original,P_dyn_original,P_rec_original):
-    P_lay = P_lay_original.copy()
-    P_dyn = P_dyn_original.copy()
-    P_sim = P_sim_original.copy()
-    P_rec = P_rec_original.copy()
+    P_lay = deepcopy(P_lay_original)
+    P_dyn = deepcopy(P_dyn_original)
+    P_sim = deepcopy(P_sim_original)
+    P_rec = deepcopy(P_rec_original)
     return P_lay, P_sim, P_dyn, P_rec
 
 def run_sim(P_layer, P_dynamic, P_simulations, P_recordings, return_G = False):
