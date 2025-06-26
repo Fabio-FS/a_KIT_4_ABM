@@ -1284,32 +1284,6 @@ def init_Heav(P_dyn, G,global_var):
         }
     return rule
 
-def init_static(P_dyn, G, global_var):
-
-    hl = P_dyn["HEALTH"]["layer"]       # layer where the the health status is imprinted
-    bl = P_dyn["BEHAVIOR"]["layer"]     # layer where the behavior is imprinted
-    
-
-    G[hl].vs["I2R"]   = P_dyn["I2R"]                                                            # for each node sets the gamma
-    G[bl].vs["PB_susc"] = P_dyn["HEALTH"]["beta0"]
-
-    # sets the initial condition for each node
-    set_disease_initial_condition(P_dyn["HEALTH"]["IC"], "health_status", G[hl])
-    G[hl].vs["next_health"] = G[hl].vs["health_status"]
-    G[bl].vs["beta"] = (np.full( shape=len(G[bl].vs), fill_value = P_dyn["HEALTH"]["beta0"])).astype(float).tolist()
-    G[bl].vs["probability"] = np.full( shape=len(G[bl].vs), fill_value = P_dyn["BEHAVIOR"]["static_probability"])
-    G[hl].vs["I_peak"] = 0
-    G[bl].vs["behavior"] = 0
-
-    rule  = {
-        'func': P_dyn["func"],
-        'hl': hl,
-        'bl': bl,
-        'beta0' : P_dyn["HEALTH"]["beta0"],
-        'max_behavior' :  P_dyn["BEHAVIOR"]["max_behavior"]
-        }
-    return rule
-
 def init_model(update_fct_dict, init_fct_dict):
     update_fct_dict["UPW_CORR"] = update_upward
     update_fct_dict["UPW_MOV"] = update_upw_mov
@@ -1319,13 +1293,11 @@ def init_model(update_fct_dict, init_fct_dict):
     update_fct_dict["DOW_MOV"] = update_dow_mov
     update_fct_dict["DOW"] = update_downward_nocorr
     update_fct_dict["DOW_Heav"] = update_downward_Heav
-    update_fct_dict["static"] = update_static
     update_fct_dict["doped+-"] = update_doped
     update_fct_dict["doped_MOV"] = update_doped_mov
     update_fct_dict["mix_3"] = update_mix_3_populations
     init_fct_dict["UPW_CORR"] = init_up_down
     init_fct_dict["DOW_CORR"] = init_up_down
-    init_fct_dict["static"] = init_static
     init_fct_dict["UPW_MOV"] = init_up_down
     init_fct_dict["DOW_MOV"] = init_up_down
     init_fct_dict["UPW"] = init_up_down
