@@ -73,27 +73,27 @@ def init_recordings(P_recordings, T_max):
 
 
 
-def single_save(G, P_rec_i, results, internal_tick = -10):
-    saving_fct_name = P_rec_i["func"]
+def single_save(G, P_rec_i, results, global_var, internal_tick = -10):
+    calc_fct_name = P_rec_i["func"]
     try:
-        saving_function = saving_dictionary[saving_fct_name]    
+        statistic_function = saving_dictionary[calc_fct_name]    
     except KeyError:
-        print("ERROR: " + saving_fct_name + " not found")
+        print("ERROR: " + calc_fct_name + " not found")
     
-    RES = saving_function(G, P_rec_i)
+    RES = statistic_function(G, P_rec_i, global_var)
     col_name  = P_rec_i["column_name"]
 
     idx = (internal_tick  +   (P_rec_i["END"]==True))   *  (1 - (internal_tick == -1))
     getattr(results,col_name).data[idx] = RES             # RES  is saved in position idx of results.name.data
 
-def batch_save(G, P_rec_i, results, internal_tick = -10, T=500):
-    saving_fct_name = P_rec_i["func"]
+def batch_save(G, P_rec_i, results, global_var, internal_tick = -10, T=500):
+    calc_fct_name = P_rec_i["func"]
     try:
-        saving_function = saving_dictionary[saving_fct_name]    
+        statistic_function = saving_dictionary[calc_fct_name]    
     except KeyError:
-        print("ERROR: " + saving_fct_name + " not found")
+        print("ERROR: " + calc_fct_name + " not found")
     
-    RES = saving_function(G, P_rec_i)
+    RES = statistic_function(G, P_rec_i, global_var)
     col_name  = P_rec_i["column_name"]
     
     next_internal_tick = (internal_tick // P_rec_i["DT"])*P_rec_i["DT"] + P_rec_i["DT"]
@@ -109,58 +109,69 @@ def batch_save(G, P_rec_i, results, internal_tick = -10, T=500):
             getattr(results,col_name).data[0] = RES
 
 
-def save_ALL(G,P_rec):
+def pass_ALL(G,P_rec, global_var = None):
     RES = G[P_rec["layer"]].vs[P_rec["attribute"]]
     return RES
 
-def save_mean(G,P_rec):
+def pass_ALL_as_int(G,P_rec, global_var = None):
+    RES = np.array(G[P_rec["layer"]].vs[P_rec["attribute"]]).astype(int).tolist()
+    return RES
+
+def calc_mean(G,P_rec, global_var = None):
+    if P_rec.get("source",None) == "global_var":
+        return np.mean(getattr(global_var,P_rec["attribute"]))
     RES = float(np.mean(G[P_rec["layer"]].vs[P_rec["attribute"]]))
     return RES
 
-def save_median(G,P_rec):
+def calc_median(G,P_rec, global_var = None):
+    if P_rec.get("source",None) == "global_var":
+        return np.median(getattr(global_var,P_rec["attribute"]))
     RES = float(np.median(G[P_rec["layer"]].vs[P_rec["attribute"]]))
     return RES
 
-def save_var(G,P_rec):
+def calc_var(G,P_rec, global_var = None):
     RES = float(np.var(G[P_rec["layer"]].vs[P_rec["attribute"]]))
     return RES
 
 # add other polarization measures: Esteban Ray, std of pairwise differences, etc.
 
-def save_max(G,P_rec):
+def calc_max(G,P_rec, global_var = None):
     RES = float(np.max(G[P_rec["layer"]].vs[P_rec["attribute"]]))
     return RES
 
-def save_min(G,P_rec):
+def calc_min(G,P_rec, global_var = None):
     RES = float(np.min(G[P_rec["layer"]].vs[P_rec["attribute"]]))
     return RES
 
-def save_frac(G,P_rec):
-    RES = float(np.sum(np.array(G[P_rec["layer"]].vs[P_rec["attribute"]]) == P_rec["attribute_value"])/len(G[P_rec["layer"]].vs[P_rec["attribute"]]))
-    return RES
+def calc_frac(G,P_rec, global_var = None):
+    if P_rec.get("source",None) == "global_var":
+        return float(np.mean(getattr(global_var,P_rec["attribute"]) == P_rec["attribute_value"]))
+    return float(np.mean(np.array(G[P_rec["layer"]].vs[P_rec["attribute"]]) == P_rec["attribute_value"]))
+    #RES = float(np.sum(np.array(G[P_rec["layer"]].vs[P_rec["attribute"]]) == P_rec["attribute_value"])/len(G[P_rec["layer"]].vs[P_rec["attribute"]]))
+    #return RES
 
-def save_histogram(G,P_rec):
+def calc_histogram(G,P_rec, global_var = None):
     RES = np.histogram(G[P_rec["layer"]].vs[P_rec["attribute"]])
     return RES
 
-def save_homophily(G,P_rec):
+def calc_homophily(G,P_rec, global_var = None):
     RES = float(calc_homophily(G[P_rec["layer"]], P_rec["attribute"], flag = P_rec["recenter_flag"], qs = P_rec["qs"], is_category = P_rec["is_category"]))
     return RES
 
-def save_homophily_recentered(G,P_rec):
+def calc_homophily_recentered(G,P_rec, global_var = None):
     RES = float(calc_homophily(G[P_rec["layer"]], P_rec["attribute"], flag = 1, qs = P_rec["qs"], is_category = P_rec["is_category"]))
     return RES
 
-def save_homophily_non_recentered(G,P_rec):
+def calc_homophily_non_recentered(G,P_rec, global_var = None):
     RES = float(calc_homophily(G[P_rec["layer"]], P_rec["attribute"], flag = 2, qs = P_rec["qs"], is_category = P_rec["is_category"]))
     return RES
 
 
-def save_fr_local(G,P_rec):
+def calc_fr_local(G,P_rec, global_var = None):
     RES = fr_local(G[P_rec["layer"]].vs[P_rec["attribute"]],P_rec["attribute"])
     return RES
 
-def fr_local(g, name, value):
+def fr_local(g, name, value, global_var = None):
     # returns the fraction of neighbors with the same value. g is the graph,  name is the name of the attribute,  value is the value of the attribute
     RES = []
     
@@ -168,35 +179,31 @@ def fr_local(g, name, value):
         RES.append(np.array(g.vs[g.neighbors(i)][name]) == value)/len(g.neighbors(i))
     return RES
 
-def save_pol(G,P_rec):
+def calc_pol(G,P_rec, global_var = None):
     RES = calc_polarization(G[P_rec["layer"]], P_rec["attribute"])
     return RES
 
-def save_ALL_as_int(G,P_rec):
-    RES = np.array(G[P_rec["layer"]].vs[P_rec["attribute"]]).astype(int).tolist()
-    return RES
-
 saving_dictionary = {
-    "ALL" : save_ALL,
-    "ALL_int" : save_ALL_as_int,
-    "avg" : save_mean,
-    "mean" : save_mean,
-    "median" : save_median,
-    "var" : save_var,
-    "variance" : save_var,
-    "max" : save_max,
-    "maximum" : save_max,
-    "min" : save_min,
-    "minimum" : save_min,
-    "frac" : save_frac,
-    "fraction" : save_frac,
-    "hist" : save_histogram,
-    "histogram" : save_histogram,
-    "hom" : save_homophily, 
-    "homophily" : save_homophily,
-    "homophily_recentered" : save_homophily_recentered,
-    "homophily_non_recentered" : save_homophily_non_recentered,
-    "fr_local" : save_fr_local,
-    "pol" : save_pol,
-    "polarization" : save_pol
+    "ALL" : pass_ALL,
+    "ALL_int" : pass_ALL_as_int,
+    "avg" : calc_mean,
+    "mean" : calc_mean,
+    "median" : calc_median,
+    "var" : calc_var,
+    "variance" : calc_var,
+    "max" : calc_max,
+    "maximum" : calc_max,
+    "min" : calc_min,
+    "minimum" : calc_min,
+    "frac" : calc_frac,
+    "fraction" : calc_frac,
+    "hist" : calc_histogram,
+    "histogram" : calc_histogram,
+    "hom" : calc_homophily, 
+    "homophily" : calc_homophily,
+    "homophily_recentered" : calc_homophily_recentered,
+    "homophily_non_recentered" : calc_homophily_non_recentered,
+    "fr_local" : calc_fr_local,
+    "pol" : calc_pol,
+    "polarization" : calc_pol
 }

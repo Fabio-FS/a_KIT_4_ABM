@@ -291,10 +291,11 @@ def run_temporal_evolution(G, list_of_rules, P_simulations, P_recordings,global_
     # L_REC_1 is the list of recordings to be done AFTER the simulations end
     #results is where all results will be stored
 
+    global_var.current_timestep = 0
     # save the state of the system BEFORE the simulations begins
     for P_rec_i in L_REC_0:
         #P_rec_i contains all parameters for saving one single variable before the simulation
-        single_save(G, P_rec_i, results, internal_tick = 0)     # 0 means that the time step is before the simulations begin
+        single_save(G, P_rec_i, results, global_var, internal_tick = 0)     # 0 means that the time step is before the simulations begin
 
     for internal_tick in range(1,P_simulations["T"]+1):
         global_var.current_timestep = internal_tick
@@ -308,16 +309,16 @@ def run_temporal_evolution(G, list_of_rules, P_simulations, P_recordings,global_
             # with the possibility to save the state every N steps via P_rec_i["DT"]
             for P_rec_i in L_REC:
                 if(internal_tick%P_rec_i["DT"] == 0):
-                    single_save(G, P_rec_i, results, internal_tick = internal_tick)
+                    single_save(G, P_rec_i, results, global_var, internal_tick = internal_tick)
 
         if global_var.stop_condition:
             for P_rec_i in L_REC:
-                batch_save(G, P_rec_i,results, internal_tick = internal_tick, T = P_simulations["T"])
+                batch_save(G, P_rec_i,results, global_var, internal_tick = internal_tick, T = P_simulations["T"])
             break
 
     # save the state of the system AFTER the simulations end
     for P_rec_i in L_REC_1:
-        single_save(G, P_rec_i, results, internal_tick = -1)     # -1 means that the time step is after the simulations end
+        single_save(G, P_rec_i, results, global_var, internal_tick = -1)     # -1 means that the time step is after the simulations end
 
 
     convert_results_to_float(results)
