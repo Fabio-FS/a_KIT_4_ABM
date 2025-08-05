@@ -565,6 +565,9 @@ def update_mix_3_populations(G, rule, global_var):
     Bi_thr = rule["Bi_thr"]
     max_behavior = rule["max_behavior"]
 
+    health_status = global_var.health_status
+    behaviors = global_var.behavior
+
     # check if there are infected nodes, if not the health update will be skipped
     N_infected = np.sum(np.array(g_h.vs["health_status"])==2)
     if N_infected == 0:
@@ -577,24 +580,53 @@ def update_mix_3_populations(G, rule, global_var):
     #------------------------------------------------------------------------------------------------------------------------------#
     #first: calculate update of personal betas
 
-    for i,vertex in enumerate(g_b.vs[global_var.herder_idcs]):
-        protecting_nghbrs = np.mean(np.array(g_b.vs[g_b.neighbors(i)]["behavior"])==1)      
-        vertex["probability"] = 1 / (1 + np.exp(   - a_pn * mu     * (protecting_nghbrs       - pn_thr)
-                                                   - a_Bi * (1-mu) * (vertex["behavior"]      - Bi_thr) 
-                                                   - a_Ni*           (N_infected/g_h.vcount() - Ni_thr)))
-    for i,vertex in enumerate(g_b.vs[global_var.contrarian_idcs]):
-        protecting_nghbrs = np.mean(np.array(g_b.vs[g_b.neighbors(i)]["behavior"])==1)      
-        vertex["probability"] = 1 / (1 + np.exp(   + a_pn * mu     * (protecting_nghbrs       - pn_thr)
-                                                   - a_Bi * (1-mu) * (vertex["behavior"]      - Bi_thr) 
-                                                   - a_Ni*           (N_infected/g_h.vcount() - Ni_thr)))
+    all_b_neighbors = global_var.b_neighbors
+
+    protecting_nghbrs = np.array([np.mean(behaviors[i]) for i in all_b_neighbors])
+
+    exponent = np.zeros(g_b.vcount())
+
+    exponent_upw = (- a_pn * mu     * (protecting_nghbrs       - pn_thr)
+                    - a_Bi * (1-mu) * (behaviors      - Bi_thr) 
+                    - a_Ni*           (N_infected/g_h.vcount() - Ni_thr))
+    
+    exponent_dow = (+ a_pn * mu     * (protecting_nghbrs       - pn_thr)
+                    - a_Bi * (1-mu) * (behaviors      - Bi_thr)
+                    - a_Ni*           (N_infected/g_h.vcount() - Ni_thr))
+    
+    exponent[global_var.herder_idcs] = exponent_upw[global_var.herder_idcs]
+    exponent[global_var.contrarian_idcs] = exponent_dow[global_var.contrarian_idcs]
+    #implicitly having the exponent for the remaining indices =0
+    #I overwrite the result of this exponent two lines beneath in the probability vector
+
+    probability = 1 / (1 + np.exp( exponent ) )
+    probability[global_var.remaining_idcs] = global_var.static_probability
+    #------------------------------------------------------------------------------------------------------------------------------#
+    #first: calculate update of personal betas
+
+    #for i,vertex in enumerate(g_b.vs[global_var.herder_idcs]):
+    #    protecting_nghbrs = np.mean(np.array(g_b.vs[g_b.neighbors(i)]["behavior"])==1)      
+    #    vertex["probability"] = 1 / (1 + np.exp(   - a_pn * mu     * (protecting_nghbrs       - pn_thr)
+    #                                               - a_Bi * (1-mu) * (vertex["behavior"]      - Bi_thr) 
+    #                                               - a_Ni*           (N_infected/g_h.vcount() - Ni_thr)))
+    #for i,vertex in enumerate(g_b.vs[global_var.contrarian_idcs]):
+    #    protecting_nghbrs = np.mean(np.array(g_b.vs[g_b.neighbors(i)]["behavior"])==1)      
+    #    vertex["probability"] = 1 / (1 + np.exp(   + a_pn * mu     * (protecting_nghbrs       - pn_thr)
+    #                                               - a_Bi * (1-mu) * (vertex["behavior"]      - Bi_thr) 
+    #                                               - a_Ni*           (N_infected/g_h.vcount() - Ni_thr)))
     #no probability update for static agents
     #------------------------------------------------------------------------------------------------------------------------------#
-    #second: update the betas and awarenesses
+    #second: update the betas
     rr1 = np.random.uniform(low=0, high=1, size=g_b.vcount())
-    g_b.vs["behavior"] = (np.array(g_b.vs["probability"]) > rr1).astype(int).tolist()
-    if N_infected == 0:
-        g_b.vs["behavior"] = 0 #not completely true to the model but doesn't change any macro prediction and speeds up simulations dramatically (probably)
-    g_b.vs["beta"] = ((1-max_behavior*np.array(g_b.vs["behavior"]))*beta0).tolist()
+    
+    global_var.behavior = ( (probability > rr1) * (N_infected > 0) )
+    #                       dice throw          if there are infected  agents
+    #agents will stop protecting if no one is infected
+    #this is an assumption/approximation that doesn't change any interesting predictions but speeds up simulations dramatically
+    beta = ((1-max_behavior*global_var.behavior)*beta0)
+    
+    g_b.vs["behavior"] = global_var.behavior.tolist()
+    g_b.vs["beta"] = beta.tolist()
 
     #------------------------------------------------------------------------------------------------------------------------------#
     #third: calculate update of health status
@@ -727,11 +759,15 @@ def init_mix_3_populations(P_dyn, G, global_var):
     hl = P_dyn["HEALTH"]["layer"]       # layer where the the health status is imprinted
     bl = P_dyn["BEHAVIOR"]["layer"]     # layer where the behavior is imprinted
 
+    global_var.b_neighbors = [np.array(G[bl].neighbors(i)) for i in range(G[bl].vcount())]
+    global_var.h_neighbors = [np.array(G[hl].neighbors(i)) for i in range(G[hl].vcount())]
+
     global_var.I2R  = P_dyn["HEALTH"]["I2R"]                                                       # for each node sets the gamma
 
     # for each node sets the initial condition
     set_disease_initial_condition(P_dyn["HEALTH"]["IC"], "health_status", G[hl])
     G[hl].vs["next_health"] = G[hl].vs["health_status"]
+    global_var.health_status = np.array(G[hl].vs["health_status"])
     G[bl].vs["beta"] = [P_dyn["HEALTH"]["beta0"]]*len(G[bl].vs) #  list(np.full( shape=len(G[bl].vs), fill_value = beta0))
     G[bl].vs["behavior"] = np.full( shape=len(G[bl].vs), fill_value = 0)
     G[bl].vs["next_beta"] = np.full( shape=len(G[bl].vs), fill_value = P_dyn["HEALTH"]["beta0"])
@@ -784,10 +820,12 @@ def init_mix_3_populations(P_dyn, G, global_var):
     global_var.contrarian_idcs = np.where(np.array(G[bl].vs["IRF_group"]) == 1)[0]
     global_var.remaining_idcs = np.where(np.array(G[bl].vs["IRF_group"]) == 2)[0]
         
+    global_var.static_probability = P_dyn["BEHAVIOR"]["static_probability"]
     for vertex in G[bl].vs:
         if vertex["IRF_group"] == 2:
             vertex["probability"] = P_dyn["BEHAVIOR"]["static_probability"]
     #print(G[bl].vs["probability"])
+    global_var.behavior = np.array(G[bl].vs["behavior"])
         
     
     #color_dict = {0: (200,0,0), 1: (0,200,0), 2:(0,0,200)}
@@ -810,8 +848,8 @@ def init_mix_3_populations(P_dyn, G, global_var):
         'bl': bl,
         'mu' : P_dyn["BEHAVIOR"]["mu"],
         'beta0' : P_dyn["HEALTH"]["beta0"],
-        'a_pn' : P_dyn["BEHAVIOR"].get("a_B",P_dyn["BEHAVIOR"]["a_pn"]),
-        'a_Bi' : P_dyn["BEHAVIOR"].get("a_B",P_dyn["BEHAVIOR"]["a_Bi"]),    
+        'a_pn' : P_dyn["BEHAVIOR"].get("a_B", P_dyn["BEHAVIOR"].get("a_pn")),
+        'a_Bi' : P_dyn["BEHAVIOR"].get("a_B", P_dyn["BEHAVIOR"].get("a_Bi")),    
         'a_Ni' : P_dyn["BEHAVIOR"]["a_Ni"],
         'pn_thr' : P_dyn["BEHAVIOR"]["pn_thr"],
         'Bi_thr' : P_dyn["BEHAVIOR"]["Bi_thr"],
