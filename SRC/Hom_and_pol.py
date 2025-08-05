@@ -97,7 +97,7 @@ def metropolis(g, attribute =  "behavior_status",
                hom_target = 0, recenter = False,
                N_steps = 10, tolerance = 1e-4,
                return_H_hist = False, dbg = False,
-               is_category = 0
+               is_category = 0, temperature = 0.01
                ):
     #N_steps: the maximum number of switching steps
 
@@ -146,14 +146,26 @@ def metropolis(g, attribute =  "behavior_status",
 
             h_attempt = Hs[count]+dh
 
-            
-            if(np.abs(Hs[count]-hom_target)>=np.abs(h_attempt-hom_target)):
-                #print("Accepted move: ", count, ", H moved of ", h_attempt-Hs[count])  
-                Hs[count+1] = h_attempt
-                B[i], B[j] = B[j], B[i]
+            hom_difference = np.abs(Hs[count]-hom_target) - np.abs(h_attempt-hom_target)
+            #how close the algorithm got in the previous step minus how close we are this time
+
+            if temperature == 0:
+                if hom_difference >= 0 :
+                    #print("Accepted move: ", count, ", H moved of ", h_attempt-Hs[count])
+                    Hs[count+1] = h_attempt
+                    B[i], B[j] = B[j], B[i]
+                else:
+                    #print("Rejected move: ", count, "  Error: ", np.abs(Hs[count]-target), "  Attempt: ", np.abs(h_attempt-target))
+                    Hs[count+1] = Hs[count]
             else:
-                #print("Rejected move: ", count, "  Error: ", np.abs(Hs[count]-target), "  Attempt: ", np.abs(h_attempt-target))
-                Hs[count+1] = Hs[count]
+                if np.random.random() < 1 / ( 1   +   np.exp( - (1/temperature) * hom_difference)    ) :
+                    #print("Accepted move: ", count, ", H moved of ", h_attempt-Hs[count])  
+                    Hs[count+1] = h_attempt
+                    B[i], B[j] = B[j], B[i]
+                else:
+                    #print("Rejected move: ", count, "  Error: ", np.abs(Hs[count]-target), "  Attempt: ", np.abs(h_attempt-target))
+                    Hs[count+1] = Hs[count]
+
             if(dbg):
                 hist_B[count,:] = B
             count = count+1
