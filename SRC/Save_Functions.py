@@ -119,13 +119,13 @@ def pass_ALL_as_int(G,P_rec, global_var = None):
 
 def calc_mean(G,P_rec, global_var = None):
     if P_rec.get("source",None) == "global_var":
-        return np.mean(getattr(global_var,P_rec["attribute"]))
-    RES = float(np.mean(G[P_rec["layer"]].vs[P_rec["attribute"]]))
-    return RES
+        return float(np.mean(getattr(global_var,P_rec["attribute"])))
+    return float(np.mean(G[P_rec["layer"]].vs[P_rec["attribute"]]))
+    
 
 def calc_median(G,P_rec, global_var = None):
     if P_rec.get("source",None) == "global_var":
-        return np.median(getattr(global_var,P_rec["attribute"]))
+        return float(np.median(getattr(global_var,P_rec["attribute"])))
     RES = float(np.median(G[P_rec["layer"]].vs[P_rec["attribute"]]))
     return RES
 
