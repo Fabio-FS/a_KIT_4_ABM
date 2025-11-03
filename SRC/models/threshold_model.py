@@ -2,6 +2,15 @@ import sys
 sys.path.append('..')
 from utilities.IC import *
 
+# ██  ██   █████    ████       ██     ██████   ██████  
+# ██  ██   ██  ██   ██ ██     ████      ██     ██      
+# ██  ██   ██  ██   ██  ██   ██  ██     ██     ██      
+# ██  ██   █████    ██  ██   ██████     ██     ████    
+# ██  ██   ██       ██  ██   ██  ██     ██     ██      
+# ██  ██   ██       ██ ██    ██  ██     ██     ██      
+#  ████    ██       ████     ██  ██     ██     ██████  
+
+
 def update_UPW_DOW(G,rule, global_var):
 
     """this simulates an SIR model
@@ -106,6 +115,126 @@ def update_UPW_DOW(G,rule, global_var):
 
         global_var.I_peak = max(global_var.I_peak  ,  np.mean(health_status==2))
 
+#  ████     ████     ████   
+# ██  ██     ██     ██  ██  
+# ██         ██     ██      
+#  ████      ██      ████   
+#     ██     ██         ██  
+# ██  ██     ██     ██  ██  
+#  ████     ████     ████   
+
+def update_UPW_DOW_SIS(G,rule, global_var):
+
+    """this simulates an SIS model
+    the behavior model is either an upwards or downwards sloping IRF
+    herding vs contrarianism
+
+    Each agent can either protect or not.
+    They base their decision on:    1. own previous decision
+                                    2. neighbor's previous decision
+                                    3. global infected
+
+    The parameter mu controls how much agents weigh their own behavior versus the social influence.
+    If mu is one agents are only influenced by others, if mu is one agents don't stick to their behavior
+
+    G is the list of graphs-layers,
+    layer is the layer where the dynamic is imprinted.
+    All the values needed for the simulation are already imprinted in the graph G[layer] and in rule
+    """
+
+    g_h = G[rule["hl"]]
+    g_b = G[rule["bl"]]
+
+    beta0 = rule["beta0"]
+    mu = rule["mu"]
+    a_pn = rule["a_pn"]
+    a_Ni = rule["a_Ni"]
+    a_Bi = rule["a_Bi"]
+    pn_thr = rule["pn_thr"]
+    Ni_thr = rule["Ni_thr"]
+    Bi_thr = rule["Bi_thr"]
+    max_behavior = rule["max_behavior"]
+
+    health_status = global_var.health_status
+    behaviors = global_var.behavior
+
+    # check if there are infected nodes, if not the health update will be skipped
+    N_infected = np.sum( health_status == 2)
+    if N_infected == 0:
+        N_protecting = np.sum(behaviors == 1)   #check if there are protecting nodes, if not, everything will be skipped
+        if N_protecting == 0:
+            global_var.stop_condition = True
+            #no return here.
+            #batch saving is triggered in the following timestep
+
+    #------------------------------------------------------------------------------------------------------------------------------#
+    #first: calculate update of personal betas
+
+    all_b_neighbors = global_var.b_neighbors
+
+    protecting_nghbrs = np.array([np.mean(behaviors[i]) for i in all_b_neighbors])
+
+    if rule["IRF_direction"] == "UPW":
+        exponent = (- a_pn * mu     * (protecting_nghbrs       - pn_thr)
+                    - a_Bi * (1-mu) * (behaviors      - Bi_thr) 
+                    - a_Ni*           (N_infected/g_h.vcount() - Ni_thr))
+    elif rule["IRF_direction"] == "DOW":
+        exponent = (+ a_pn * mu     * (protecting_nghbrs       - pn_thr)
+                    - a_Bi * (1-mu) * (behaviors      - Bi_thr)
+                    - a_Ni*           (N_infected/g_h.vcount() - Ni_thr))
+    else:
+        pass
+    probability = 1 / (1 + np.exp( exponent ) )
+
+    #------------------------------------------------------------------------------------------------------------------------------#
+    #second: update the betas
+    rr1 = np.random.uniform(low=0, high=1, size=g_b.vcount())
+    #g_b.vs["behavior"] = (np.array(g_b.vs["probability"]) > rr1).astype(int).tolist()
+    
+    global_var.behavior = ( (probability > rr1) * (N_infected > 0) )
+    #                       dice throw          if there are infected  agents
+    #agents will stop protecting if no one is infected
+    #this is an assumption/approximation that doesn't change any interesting predictions but speeds up simulations dramatically
+    beta = ((1-max_behavior*global_var.behavior)*beta0)
+    
+    g_b.vs["behavior"] = global_var.behavior.tolist()
+    g_b.vs["beta"] = beta.tolist()
+
+    #------------------------------------------------------------------------------------------------------------------------------#
+    #third: calculate and carry out update of health status
+
+    if(N_infected>0):
+        I2R = global_var.I2R
+        
+        # generate a random number for each node
+        rr=np.random.uniform(low=0, high=1, size=(len(g_h.vs)))    
+        #each node's neighbors
+        all_h_neighbors = global_var.h_neighbors
+        #the number of infected neighbors for each node
+        infected_nghbrs = np.array([np.sum(health_status[i] == 2) for i in all_h_neighbors])
+        #the infection probability for each node, as if it were susceptible
+        infection_probability = 1 - np.power (1 - beta,infected_nghbrs)
+
+        health_status = ( health_status                                           #previous health_status
+                          - (rr < I2R)                    * (health_status == 2)  #-1 if inf. agent recovers and becomes susceptible again
+                          + (rr < infection_probability)  * (health_status == 1)     #+1 if susc. agent is infected
+                        )
+
+        global_var.health_status = health_status
+
+        g_h.vs["health_status"] = health_status.tolist()
+        #writing the health status to nodes, because I still use that when saving
+
+        global_var.I_peak = max(global_var.I_peak  ,  np.mean(health_status==2))
+
+# ██   ██   ████    ██  ██    ████    ██████  
+# ███ ███  ██  ██   ██  ██     ██     ██      
+# ███████  ██  ██   ██  ██     ██     ██      
+# ██ █ ██  ██  ██   ██  ██     ██     ████    
+# ██   ██  ██  ██   ██  ██     ██     ██      
+# ██   ██  ██  ██     ███      ██     ██      
+# ██   ██   ████      ██      ████    ██████  
+
 def update_upw_mov(G,rule, global_var):
 
     """this simulates an SIR model, an assimilation model desgined to compare to a downward threshold
@@ -202,6 +331,108 @@ def update_upw_mov(G,rule, global_var):
     rr1 = np.random.uniform(low=0, high=1, size=g_b.vcount())
     g_b.vs["behavior"] = (np.array(g_b.vs["probability"]) > rr1).astype(int).tolist()
     g_b.vs["beta"] = ((1-max_behavior*np.array(g_b.vs["behavior"]))*beta0).tolist()
+
+def update_dow_mov(G,rule, global_var):
+
+    """this simulates an SIR model, an assimilation model desgined to compare to a downward threshold
+
+    Each agent can either protect or not.
+    They base their decision on:    1. own previous decision
+                                    2. neighbor's previous decision
+                                    3. global infected
+
+    Agents are influenced by the share of adopting neighbors
+
+    The parameter mu controls how much agents weigh their own behavior versus the social influence.
+    If mu is one agents are not influenced by others, if mu is zero agents don't stick to their opinion.
+
+    G is the list of graphs-layers,
+    layer is the layer where the dynamic is imprinted.
+    All the values needed for the simulation are already imprinted in the graph G[layer] and in rule
+    """
+
+    #I needed this extra function for making movies
+    #the other functions update behavior, update disease, then take snapshot
+    #but in movies, I want to show the behavior that will have an impact on the next step
+    #therefore I update disease, then behavior.
+    #But the first update should still be behavior.
+    #So I am doing    behavior  -  snapshot -  disease,behavior  - snapshot - ....
+
+    g_h = G[rule["hl"]]
+    g_b = G[rule["bl"]]
+
+    beta0 = rule["beta0"]
+    mu = rule["mu"]
+    a_pn = rule["a_pn"]
+    a_Ni = rule["a_Ni"]
+    a_Bi = rule["a_Bi"]
+    a_corr = rule["a_corr"]
+    pn_thr = rule["pn_thr"]
+    Ni_thr = rule["Ni_thr"]
+    Bi_thr = rule["Bi_thr"]
+    max_behavior = rule["max_behavior"]
+
+    # check if there are infected nodes, if not the health update will be skipped
+    N_infected = np.sum(np.array(g_h.vs["health_status"])==2)
+    if N_infected == 0:
+        N_protecting = np.sum(np.array(g_b.vs["behavior"])==1)   #check if there are protecting nodes, if not, everything will be skipped
+        if N_protecting == 0:
+            global_var.stop_condition = True
+            #no return here.
+            #batch saving is triggered in the following timestep
+
+    if global_var.first_tick == False:
+        #------------------------------------------------------------------------------------------------------------------------------#
+        #first: calculate update of health status
+        if(N_infected>0):
+            I2R = global_var.I2R
+        
+            # generate a random number for each node
+            rr=np.random.uniform(low=0, high=1, size=(len(g_h.vs)))    
+            #each node's neighbors
+            all_h_neighbors = global_var.h_neighbors
+            #the number of infected neighbors for each node
+            infected_nghbrs = np.array([np.sum(health_status[i] == 2) for i in all_h_neighbors])
+            #the infection probability for each node, as if it were susceptible
+            infection_probability = 1 - np.power (1 - beta,infected_nghbrs)
+
+            health_status = ( health_status                                        +   #previous health_status
+                              (rr < I2R)                    * (health_status == 2) +   #+1 if inf. agent recovers
+                              (rr < infection_probability)  * (health_status == 1)     #+1 if susc. agent is infected
+                            )
+
+            global_var.health_status = health_status
+
+            g_h.vs["health_status"] = health_status.tolist()
+            #writing the health status to nodes, because I still use that when saving
+
+            global_var.I_peak = max(global_var.I_peak  ,  np.mean(health_status==2))
+
+    N_infected = np.sum(np.array(g_h.vs["health_status"])==2)
+    global_var.first_tick = False
+    #------------------------------------------------------------------------------------------------------------------------------#
+    #third: calculate update of personal betas
+
+    for i,vertex in enumerate(g_b.vs):
+        protecting_nghbrs = np.mean(np.array(g_b.vs[g_b.neighbors(i)]["behavior"])==1)
+        vertex["probability"] = ( (1 / (1 + np.exp(     a_pn * mu     * (protecting_nghbrs       - pn_thr)
+                                                      - a_Bi * (1-mu) * (vertex["behavior"]      - Bi_thr) 
+                                                      - a_Ni*           (N_infected/g_h.vcount() - Ni_thr))) )  *
+                                  (2 / (1 + np.exp(-a_corr *           (N_infected/g_h.vcount()) )) - 1) )
+    #------------------------------------------------------------------------------------------------------------------------------#
+    #fourth: update the betas and awarenesses
+    rr1 = np.random.uniform(low=0, high=1, size=g_b.vcount())
+    g_b.vs["behavior"] = (np.array(g_b.vs["probability"]) > rr1).astype(int).tolist()
+    g_b.vs["beta"] = ((1-max_behavior*np.array(g_b.vs["behavior"]))*beta0).tolist()
+
+# ██  ██   ██████     ██     ██  ██    ████     ████     ████    ████     ██████  
+# ██  ██   ██        ████    ██  ██     ██     ██  ██     ██     ██ ██    ██      
+# ██  ██   ██       ██  ██   ██  ██     ██     ██         ██     ██  ██   ██      
+# ██████   ████     ██████   ██  ██     ██      ████      ██     ██  ██   ████    
+# ██  ██   ██       ██  ██   ██  ██     ██         ██     ██     ██  ██   ██      
+# ██  ██   ██       ██  ██     ███      ██     ██  ██     ██     ██ ██    ██      
+# ██  ██   ██████   ██  ██     ██      ████     ████     ████    ████     ██████  
+
 
 def update_upward_Heav(G,rule, global_var):
 
@@ -355,98 +586,14 @@ def update_downward_Heav(G,rule, global_var):
 
         global_var.I_peak = max(global_var.I_peak  ,  np.mean(health_status==2))
 
-def update_dow_mov(G,rule, global_var):
+# ██   ██   ████    ██  ██   ██████   ████    
+# ███ ███    ██     ██  ██   ██       ██ ██   
+# ███████    ██       ███    ██       ██  ██  
+# ██ █ ██    ██       ██     ████     ██  ██  
+# ██   ██    ██      ████    ██       ██  ██  
+# ██   ██    ██     ██  ██   ██       ██ ██   
+# ██   ██   ████    ██  ██   ██████   ████    
 
-    """this simulates an SIR model, an assimilation model desgined to compare to a downward threshold
-
-    Each agent can either protect or not.
-    They base their decision on:    1. own previous decision
-                                    2. neighbor's previous decision
-                                    3. global infected
-
-    Agents are influenced by the share of adopting neighbors
-
-    The parameter mu controls how much agents weigh their own behavior versus the social influence.
-    If mu is one agents are not influenced by others, if mu is zero agents don't stick to their opinion.
-
-    G is the list of graphs-layers,
-    layer is the layer where the dynamic is imprinted.
-    All the values needed for the simulation are already imprinted in the graph G[layer] and in rule
-    """
-
-    #I needed this extra function for making movies
-    #the other functions update behavior, update disease, then take snapshot
-    #but in movies, I want to show the behavior that will have an impact on the next step
-    #therefore I update disease, then behavior.
-    #But the first update should still be behavior.
-    #So I am doing    behavior  -  snapshot -  disease,behavior  - snapshot - ....
-
-    g_h = G[rule["hl"]]
-    g_b = G[rule["bl"]]
-
-    beta0 = rule["beta0"]
-    mu = rule["mu"]
-    a_pn = rule["a_pn"]
-    a_Ni = rule["a_Ni"]
-    a_Bi = rule["a_Bi"]
-    a_corr = rule["a_corr"]
-    pn_thr = rule["pn_thr"]
-    Ni_thr = rule["Ni_thr"]
-    Bi_thr = rule["Bi_thr"]
-    max_behavior = rule["max_behavior"]
-
-    # check if there are infected nodes, if not the health update will be skipped
-    N_infected = np.sum(np.array(g_h.vs["health_status"])==2)
-    if N_infected == 0:
-        N_protecting = np.sum(np.array(g_b.vs["behavior"])==1)   #check if there are protecting nodes, if not, everything will be skipped
-        if N_protecting == 0:
-            global_var.stop_condition = True
-            #no return here.
-            #batch saving is triggered in the following timestep
-
-    if global_var.first_tick == False:
-        #------------------------------------------------------------------------------------------------------------------------------#
-        #first: calculate update of health status
-        if(N_infected>0):
-            I2R = global_var.I2R
-        
-            # generate a random number for each node
-            rr=np.random.uniform(low=0, high=1, size=(len(g_h.vs)))    
-            #each node's neighbors
-            all_h_neighbors = global_var.h_neighbors
-            #the number of infected neighbors for each node
-            infected_nghbrs = np.array([np.sum(health_status[i] == 2) for i in all_h_neighbors])
-            #the infection probability for each node, as if it were susceptible
-            infection_probability = 1 - np.power (1 - beta,infected_nghbrs)
-
-            health_status = ( health_status                                        +   #previous health_status
-                              (rr < I2R)                    * (health_status == 2) +   #+1 if inf. agent recovers
-                              (rr < infection_probability)  * (health_status == 1)     #+1 if susc. agent is infected
-                            )
-
-            global_var.health_status = health_status
-
-            g_h.vs["health_status"] = health_status.tolist()
-            #writing the health status to nodes, because I still use that when saving
-
-            global_var.I_peak = max(global_var.I_peak  ,  np.mean(health_status==2))
-
-    N_infected = np.sum(np.array(g_h.vs["health_status"])==2)
-    global_var.first_tick = False
-    #------------------------------------------------------------------------------------------------------------------------------#
-    #third: calculate update of personal betas
-
-    for i,vertex in enumerate(g_b.vs):
-        protecting_nghbrs = np.mean(np.array(g_b.vs[g_b.neighbors(i)]["behavior"])==1)
-        vertex["probability"] = ( (1 / (1 + np.exp(     a_pn * mu     * (protecting_nghbrs       - pn_thr)
-                                                      - a_Bi * (1-mu) * (vertex["behavior"]      - Bi_thr) 
-                                                      - a_Ni*           (N_infected/g_h.vcount() - Ni_thr))) )  *
-                                  (2 / (1 + np.exp(-a_corr *           (N_infected/g_h.vcount()) )) - 1) )
-    #------------------------------------------------------------------------------------------------------------------------------#
-    #fourth: update the betas and awarenesses
-    rr1 = np.random.uniform(low=0, high=1, size=g_b.vcount())
-    g_b.vs["behavior"] = (np.array(g_b.vs["probability"]) > rr1).astype(int).tolist()
-    g_b.vs["beta"] = ((1-max_behavior*np.array(g_b.vs["behavior"]))*beta0).tolist()
 
 def update_doped(G,rule, global_var):
 
@@ -532,7 +679,6 @@ def update_doped(G,rule, global_var):
 
         global_var.I_peak = max(global_var.I_peak  ,  np.mean(health_status==2))
 
-
 def update_mix_3_populations(G, rule, global_var):
 
     """this simulates an SIR model, an assimilation model desgined to compare to a downward threshold
@@ -571,7 +717,7 @@ def update_mix_3_populations(G, rule, global_var):
     # check if there are infected nodes, if not the health update will be skipped
     N_infected = np.sum(np.array(g_h.vs["health_status"])==2)
     if N_infected == 0:
-        N_protecting = np.sum(np.array(g_b.vs["behavior"])==1)   #check if there are protecting nodes, if not, everything will be skipped
+        N_protecting = np.sum(np.array(behaviors)==1)   #check if there are protecting nodes, if not, everything will be skipped
         if N_protecting == 0:
             global_var.stop_condition = True
             #no return here.
@@ -752,6 +898,16 @@ def update_doped_mov(G,rule, global_var):
     g_b.vs["behavior"] = (np.array(g_b.vs["probability"]) > rr1).astype(int).tolist()
     g_b.vs["beta"] = ((1-max_behavior*np.array(g_b.vs["behavior"]))*beta0).tolist()
 
+
+#  ████    ██  ██    ████    ██████  
+#   ██     ███ ██     ██       ██    
+#   ██     ██████     ██       ██    
+#   ██     ██████     ██       ██    
+#   ██     ██ ███     ██       ██    
+#   ██     ██  ██     ██       ██    
+#  ████    ██  ██    ████      ██    
+
+
 def init_mix_3_populations(P_dyn, G, global_var):
 
     global_var.first_tick = True
@@ -788,6 +944,10 @@ def init_mix_3_populations(P_dyn, G, global_var):
             if (share_static + share_herders) < 1:            
                 share_contrarians = 1 - (share_static + share_herders)
                 fixable = True
+        elif P_dyn["BEHAVIOR"]["IC"]["undefined"] == "herders":
+            if (share_static + share_contrarians) < 1:            
+                share_herders = 1 - (share_static + share_contrarians)
+                fixable = True
 
         if not fixable:
             print("fractions of agents are not adding up to one.")
@@ -813,7 +973,8 @@ def init_mix_3_populations(P_dyn, G, global_var):
         set_initial_condition(P_dyn["BEHAVIOR"]["IC"], 
                                          attribute = "IRF_group",
                                          g = G[bl], 
-                                         vector_from_init_fct = np.int32(np.array(G[bl].vs["IRF_group"])))
+                                         vector_from_init_fct = np.int32(np.array(G[bl].vs["IRF_group"])),
+                                         global_var = global_var)
     
     #after potentially homophilously distriubting the attribute, write the indices to global_var
     global_var.herder_idcs = np.where(np.array(G[bl].vs["IRF_group"]) == 0)[0]
@@ -826,21 +987,53 @@ def init_mix_3_populations(P_dyn, G, global_var):
             vertex["probability"] = P_dyn["BEHAVIOR"]["static_probability"]
     #print(G[bl].vs["probability"])
     global_var.behavior = np.array(G[bl].vs["behavior"])
+
+    if P_dyn["BEHAVIOR"]["IC"].get("equilibrium_flag",False):
+        g_b = G[bl]
+        a_pn = P_dyn["BEHAVIOR"].get("a_B",P_dyn["BEHAVIOR"].get("a_pn"))
+        a_Bi = P_dyn["BEHAVIOR"].get("a_B",P_dyn["BEHAVIOR"].get("a_Bi"))
+        mu = P_dyn["BEHAVIOR"]["mu"]
+        pn_thr = P_dyn["BEHAVIOR"]["pn_thr"]
+        N_infected = P_dyn["HEALTH"]["IC"]["N_pat_zero"]
+        g_h = G[hl]
+        Bi_thr = P_dyn["BEHAVIOR"]["Bi_thr"]
+        a_Ni = P_dyn["BEHAVIOR"]["a_Ni"]
+        Ni_thr = P_dyn["BEHAVIOR"]["Ni_thr"]
+        equil_steps = P_dyn["BEHAVIOR"]["IC"].get("equil_steps",10)
+
+        for eq_step in range(equil_steps):
+            #------------------------------------------------------------------------------------------------------------------------------#
+            #first: calculate update of personal betas
+
+            all_b_neighbors = global_var.b_neighbors
+
+            protecting_nghbrs = np.array([np.mean(global_var.behavior[i]) for i in all_b_neighbors])
+
+            exponent = np.zeros(g_b.vcount())
+
+            exponent_upw = (- a_pn * mu     * (protecting_nghbrs       - pn_thr)
+                            - a_Bi * (1-mu) * (global_var.behavior      - Bi_thr) 
+                            - a_Ni*           (N_infected/g_h.vcount() - Ni_thr))
+    
+            exponent_dow = (+ a_pn * mu     * (protecting_nghbrs       - pn_thr)
+                            - a_Bi * (1-mu) * (global_var.behavior      - Bi_thr)
+                            - a_Ni*           (N_infected/g_h.vcount() - Ni_thr))
+    
+            exponent[global_var.herder_idcs] = exponent_upw[global_var.herder_idcs]
+            exponent[global_var.contrarian_idcs] = exponent_dow[global_var.contrarian_idcs]
+            #implicitly having the exponent for the remaining indices =0
+            #I overwrite the result of this exponent two lines beneath in the probability vector
+
+            probability = 1 / (1 + np.exp( exponent ) )
+            probability[global_var.remaining_idcs] = global_var.static_probability
+            #------------------------------------------------------------------------------------------------------------------------------#
+            #second: update the betas
+            rr1 = np.random.uniform(low=0, high=1, size=g_b.vcount())
+    
+            global_var.behavior = ( (probability > rr1) * (N_infected > 0) )
+    G[bl].vs["behavior"] = global_var.behavior
         
     
-    #color_dict = {0: (200,0,0), 1: (0,200,0), 2:(0,0,200)}
-    #defining the layout
-    #mylayout = []
-    #for row in range(31):
-    #    for col in range(31):
-    #        mylayout.append([col,row])
-    #G[bl].vs["color"] = [color_dict[i] for i in G[bl].vs["IRF_group"]]
-    #from matplotlib import pyplot as plt
-    #ig.plot(G[bl])
-    #ig.plot(G[bl],target="sample_network.png", layout = mylayout)
-    #plt.show()
-    #exit()
-
 
     rule  = {
         'func': P_dyn["func"],
@@ -887,6 +1080,11 @@ def init_up_down(P_dyn, G,global_var):
 
     a_corr = P_dyn["BEHAVIOR"].get("a_corr",None)
 
+    if "UPW" in P_dyn["func"]:
+        G[bl].vs["herder"] = True
+    else:
+        G[bl].vs["herder"] = False
+
     if P_dyn["func"] == "doped+-" or P_dyn["func"] == "doped_MOV":
         #doped as in semiconductors. Herders and contrarians in one network
         share_herders = P_dyn["BEHAVIOR"]["IC"]["share_herders"]
@@ -910,7 +1108,8 @@ def init_up_down(P_dyn, G,global_var):
             set_initial_condition(P_dyn["BEHAVIOR"]["IC"], 
                                              attribute = "herder",
                                              g = G[bl], 
-                                             vector_from_init_fct = np.int32(np.array(G[bl].vs["herder"])))
+                                             vector_from_init_fct = np.int32(np.array(G[bl].vs["herder"])),
+                                             global_var = global_var)
 
             G[bl].vs["herder"] = [bool(x == 1) for x in G[bl].vs["herder"]]
 
@@ -931,8 +1130,13 @@ def init_up_down(P_dyn, G,global_var):
 
         for eq_step in range(equil_steps):
             for i,vertex in enumerate(g_b.vs):
-                protecting_nghbrs = np.mean(np.array(g_b.vs[g_b.neighbors(i)]["behavior"])==1)      
-                vertex["probability"] = 1 / (1 + np.exp(   + a_pn * mu     * (protecting_nghbrs       - pn_thr)
+                protecting_nghbrs = np.mean(np.array(g_b.vs[g_b.neighbors(i)]["behavior"])==1)
+                if vertex["herder"]:
+                    vertex["probability"] = 1 / (1 + np.exp(   - a_pn * mu     * (protecting_nghbrs       - pn_thr)
+                                                   - a_Bi * (1-mu) * (vertex["behavior"]      - Bi_thr) 
+                                                   - a_Ni*           (N_infected/g_h.vcount() - Ni_thr)))
+                else:
+                    vertex["probability"] = 1 / (1 + np.exp(   + a_pn * mu     * (protecting_nghbrs       - pn_thr)
                                                    - a_Bi * (1-mu) * (vertex["behavior"]      - Bi_thr) 
                                                    - a_Ni*           (N_infected/g_h.vcount() - Ni_thr)))
             #------------------------------------------------------------------------------------------------------------------------------#
@@ -1002,6 +1206,12 @@ def init_model(update_fct_dict, init_fct_dict):
     init_fct_dict["DOW"] = init_up_down
     update_fct_dict["UPW"] = update_UPW_DOW
     update_fct_dict["DOW"] = update_UPW_DOW
+
+    #upwards and downwards SIS functions
+    init_fct_dict["UPW_SIS"] = init_up_down
+    init_fct_dict["DOW_SIS"] = init_up_down
+    update_fct_dict["UPW_SIS"] = update_UPW_DOW_SIS
+    update_fct_dict["DOW_SIS"] = update_UPW_DOW_SIS
 
     #functions for movies
     init_fct_dict["UPW_MOV"] = init_up_down
