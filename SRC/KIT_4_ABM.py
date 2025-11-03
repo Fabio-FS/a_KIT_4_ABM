@@ -56,11 +56,14 @@ def run_sim(P_layer, P_dynamic, P_simulations, P_recordings, return_G = False):
         return Data, G
     return Data
 
-#  ██ ███    ██ ██ ████████                     ███    ██ ███████ ████████ 
-#  ██ ████   ██ ██    ██                        ████   ██ ██         ██    
-#  ██ ██ ██  ██ ██    ██        █████ █████     ██ ██  ██ █████      ██    
-#  ██ ██  ██ ██ ██    ██                        ██  ██ ██ ██         ██    
-#  ██ ██   ████ ██    ██                        ██   ████ ███████    ██    
+# ██  ██   ██████   ██████   ██   ██   ████    █████    ██  ██  
+# ███ ██   ██         ██     ██   ██  ██  ██   ██  ██   ██ ██   
+# ██████   ██         ██     ██   ██  ██  ██   ██  ██   ████    
+# ██████   ████       ██     ██ █ ██  ██  ██   █████    ███     
+# ██ ███   ██         ██     ███████  ██  ██   ████     ████    
+# ██  ██   ██         ██     ███ ███  ██  ██   ██ ██    ██ ██   
+# ██  ██   ██████     ██     ██   ██   ████    ██  ██   ██  ██  
+
 
 def init_graph(P_lay):
     G = []
@@ -81,7 +84,7 @@ def init_graph(P_lay):
         elif(p_lay_i["type"] == "Lattice"):
             if(p_lay_i["Lx"]*p_lay_i["Ly"] != N):
                 print("GRAPH SIZE WARNING: Lx*Ly != N: " + str(p_lay_i["Lx"]*p_lay_i["Ly"]) + " != " + str(N)) 
-            g = ig.Graph.Lattice(dim=[p_lay_i["Lx"], p_lay_i["Ly"]], circular=False, nei = p_lay_i["nei"])
+            g = ig.Graph.Lattice(dim=[p_lay_i["Lx"], p_lay_i["Ly"]], circular=p_lay_i.get("circular",False), nei = p_lay_i["nei"])
         elif(p_lay_i["type"] == "Moore_Lattice"):
             #a lattice with Moore neighborhood, i.e. 8 neighbors
             #a Cellular automaton
@@ -285,7 +288,7 @@ def run_temporal_evolution(G, list_of_rules, P_simulations, P_recordings,global_
     #necessary for networks with >999 agents.
     #otherwise numpy prints every array as [y_0, y_1, ..., y_n]
 
-    L_REC_0, L_REC, L_REC_1, results = init_recordings(P_recordings, P_simulations["T"])
+    L_REC_0, L_REC, L_REC_1, results = init_recording(P_recordings, P_simulations["T"])
     # L_REC_0 is the list of recordings to be done BEFORE the simulations begin
     # L_REC is the list of recordings to be done DURING the simulations
     # L_REC_1 is the list of recordings to be done AFTER the simulations end
