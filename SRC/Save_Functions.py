@@ -1,6 +1,15 @@
 import numpy as np
 from Hom_and_pol import calc_homophily, calc_polarization
 
+#  ████    ██         ██      ████     ████    ██████    ████   
+# ██  ██   ██        ████    ██  ██   ██  ██   ██       ██  ██  
+# ██       ██       ██  ██   ██       ██       ██       ██      
+# ██       ██       ██████    ████     ████    ████      ████   
+# ██       ██       ██  ██       ██       ██   ██           ██  
+# ██  ██   ██       ██  ██   ██  ██   ██  ██   ██       ██  ██  
+#  ████    ██████   ██  ██    ████     ████    ██████    ████   
+
+
 class Results():
     #an empty container for ALL results
     #saved values for each parameter will be an attribute of the Results object
@@ -23,18 +32,18 @@ class SingleVariable_Results:
 #  ██   ██ ███████  ██████  ██████  ██   ██ ██████  ██ ██   ████  ██████  ███████ 
 
 
-def init_recordings(P_recordings, T_max):
+def init_recording(P_recording, T_max):
 
     # initialize the recordings
-    L_REC_0 = []                        # list of recordings at the beginning of the simulation
-    L_REC   = []                        # list of recordings during the simulation
-    L_REC_1 = []                        # list of recordings at the end of the simulation
+    L_REC_0 = []                        # what to record this at the BEGINNING of the simulation
+    L_REC   = []                        # what to record this DURING the simulation
+    L_REC_1 = []                        # what to record at the END of the simulation
     #where all results will be saved:
     results = Results()
 
-    for i in range(P_recordings["N"]):
+    for i in range(P_recording["N"]):
         # for each recording i, read the parameters and initialize the recording
-        P_rec_i = P_recordings["Recording_" + str(i)]
+        P_rec_i = P_recording["Recording_" + str(i)]
         # for each of recording, I calculate how often it appears:
         P_rec_i["total_count"] = 0
 
@@ -74,6 +83,8 @@ def init_recordings(P_recordings, T_max):
 
 
 def single_save(G, P_rec_i, results, global_var, internal_tick = -10):
+    #writes values to the Results object
+    #the Results object is later exported to csv
     calc_fct_name = P_rec_i["func"]
     try:
         statistic_function = saving_dictionary[calc_fct_name]    
@@ -87,6 +98,8 @@ def single_save(G, P_rec_i, results, global_var, internal_tick = -10):
     getattr(results,col_name).data[idx] = RES             # RES  is saved in position idx of results.name.data
 
 def batch_save(G, P_rec_i, results, global_var, internal_tick = -10, T=500):
+    #writes many values at once to the Results object
+    #the Results object is later exported to csv
     calc_fct_name = P_rec_i["func"]
     try:
         statistic_function = saving_dictionary[calc_fct_name]    
@@ -108,8 +121,29 @@ def batch_save(G, P_rec_i, results, global_var, internal_tick = -10, T=500):
         if P_rec_i["END"] == True:
             getattr(results,col_name).data[0] = RES
 
+                                                                                                                                                                                    
+#  ████    ██████     ██     ██████    ████     ████    ██████    ████     ████     ████  
+# ██  ██     ██      ████      ██       ██     ██  ██     ██       ██     ██  ██   ██  ██ 
+# ██         ██     ██  ██     ██       ██     ██         ██       ██     ██       ██     
+#  ████      ██     ██████     ██       ██      ████      ██       ██     ██        ████  
+#     ██     ██     ██  ██     ██       ██         ██     ██       ██     ██           ██ 
+# ██  ██     ██     ██  ██     ██       ██     ██  ██     ██       ██     ██  ██   ██  ██ 
+#  ████      ██     ██  ██     ██      ████     ████      ██      ████     ████     ████  
+
+
+# ██████   ██  ██   ██  ██    ████    ██████    ████     ████    ██  ██    ████   
+# ██       ██  ██   ███ ██   ██  ██     ██       ██     ██  ██   ███ ██   ██  ██  
+# ██       ██  ██   ██████   ██         ██       ██     ██  ██   ██████   ██      
+# ████     ██  ██   ██████   ██         ██       ██     ██  ██   ██████    ████   
+# ██       ██  ██   ██ ███   ██         ██       ██     ██  ██   ██ ███       ██  
+# ██       ██  ██   ██  ██   ██  ██     ██       ██     ██  ██   ██  ██   ██  ██  
+# ██        ████    ██  ██    ████      ██      ████     ████    ██  ██    ████  
+
+
 
 def pass_ALL(G,P_rec, global_var = None):
+    if P_rec.get("source",None) == "global_var":
+        return getattr(global_var,P_rec["attribute"])
     RES = G[P_rec["layer"]].vs[P_rec["attribute"]]
     return RES
 
@@ -145,25 +179,48 @@ def calc_min(G,P_rec, global_var = None):
 
 def calc_frac(G,P_rec, global_var = None):
     if P_rec.get("source",None) == "global_var":
-        return float(np.mean(getattr(global_var,P_rec["attribute"]) == P_rec["attribute_value"]))
-    return float(np.mean(np.array(G[P_rec["layer"]].vs[P_rec["attribute"]]) == P_rec["attribute_value"]))
+        return float(   np.mean(getattr(global_var,P_rec["attribute"])    ==    P_rec["attribute_value"])    )
+    return float(   np.mean(np.array(G[P_rec["layer"]].vs[P_rec["attribute"]])   ==   P_rec["attribute_value"])   )
     #RES = float(np.sum(np.array(G[P_rec["layer"]].vs[P_rec["attribute"]]) == P_rec["attribute_value"])/len(G[P_rec["layer"]].vs[P_rec["attribute"]]))
     #return RES
+
+def calc_frac_subgroup(G, P_rec, global_var = None):
+
+    not_all_conditions_applied = True
+    subgroup_index = np.array(list(range(G[P_rec["layer"]].vcount())))
+    all_idcs = np.array(list(range(G[P_rec["layer"]].vcount())))
+    true_counter = 0
+    condition_idx = 1   
+    while not_all_conditions_applied:
+        true_counter += 1
+        try:
+            new_condition_idcs = all_idcs[np.array(G[P_rec["layer"]].vs[P_rec[f"attribute_subgroup_{condition_idx}"]]) == P_rec[f"attribute_subgroup_{condition_idx}_value"]]
+            subgroup_index = np.intersect1d(subgroup_index, new_condition_idcs )
+        except:
+            not_all_conditions_applied = False
+        condition_idx += 1
+
+    if len(subgroup_index) == 0:
+        return 0
+    
+    subgroup_size = len(subgroup_index)/G[P_rec["layer"]].vcount()
+    
+    return float( np.mean(np.array(G[P_rec["layer"]].vs[subgroup_index][P_rec["attribute"]])   ==   P_rec["attribute_value"]) * subgroup_size  )
 
 def calc_histogram(G,P_rec, global_var = None):
     RES = np.histogram(G[P_rec["layer"]].vs[P_rec["attribute"]])
     return RES
 
-def calc_homophily(G,P_rec, global_var = None):
-    RES = float(calc_homophily(G[P_rec["layer"]], P_rec["attribute"], flag = P_rec["recenter_flag"], qs = P_rec["qs"], is_category = P_rec["is_category"]))
+def calc_homophily_wrapper(G,P_rec, global_var = None):
+    RES = float(calc_homophily(G[P_rec["layer"]], P_rec["attribute"], recenter_flag = P_rec["recenter_flag"], qs = P_rec["qs"], is_category = P_rec["is_category"]))
     return RES
 
-def calc_homophily_recentered(G,P_rec, global_var = None):
-    RES = float(calc_homophily(G[P_rec["layer"]], P_rec["attribute"], flag = 1, qs = P_rec["qs"], is_category = P_rec["is_category"]))
+def calc_homophily_recentered_wrapper(G,P_rec, global_var = None):
+    RES = float(calc_homophily(G[P_rec["layer"]], P_rec["attribute"], recenter_flag = 1, qs = P_rec["qs"], is_category = P_rec["is_category"]))
     return RES
 
-def calc_homophily_non_recentered(G,P_rec, global_var = None):
-    RES = float(calc_homophily(G[P_rec["layer"]], P_rec["attribute"], flag = 2, qs = P_rec["qs"], is_category = P_rec["is_category"]))
+def calc_homophily_non_recentered_wrapper(G,P_rec, global_var = None):
+    RES = float(calc_homophily(G[P_rec["layer"]], P_rec["attribute"], recenter_flag = 2, qs = P_rec["qs"], is_category = P_rec["is_category"]))
     return RES
 
 
@@ -171,12 +228,12 @@ def calc_fr_local(G,P_rec, global_var = None):
     RES = fr_local(G[P_rec["layer"]].vs[P_rec["attribute"]],P_rec["attribute"])
     return RES
 
-def fr_local(g, name, value, global_var = None):
+def fr_local(g, attribute, value, global_var = None):
     # returns the fraction of neighbors with the same value. g is the graph,  name is the name of the attribute,  value is the value of the attribute
     RES = []
     
     for i in range(len(g.vs)):
-        RES.append(np.array(g.vs[g.neighbors(i)][name]) == value)/len(g.neighbors(i))
+        RES.append(np.array(g.vs[g.neighbors(i)][attribute]) == value)/len(g.neighbors(i))
     return RES
 
 def calc_pol(G,P_rec, global_var = None):
@@ -197,12 +254,13 @@ saving_dictionary = {
     "minimum" : calc_min,
     "frac" : calc_frac,
     "fraction" : calc_frac,
+    "frac_subgroup" : calc_frac_subgroup,
     "hist" : calc_histogram,
     "histogram" : calc_histogram,
-    "hom" : calc_homophily, 
-    "homophily" : calc_homophily,
-    "homophily_recentered" : calc_homophily_recentered,
-    "homophily_non_recentered" : calc_homophily_non_recentered,
+    "hom" : calc_homophily_wrapper, 
+    "homophily" : calc_homophily_wrapper,
+    "homophily_recentered" : calc_homophily_recentered_wrapper,
+    "homophily_non_recentered" : calc_homophily_non_recentered_wrapper,
     "fr_local" : calc_fr_local,
     "pol" : calc_pol,
     "polarization" : calc_pol
