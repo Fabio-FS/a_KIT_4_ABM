@@ -32,7 +32,7 @@ def set_disease_initial_condition(IC, attribute, g):
 
 
 
-def set_initial_condition(IC, attribute, g, vector_from_init_fct = None):
+def set_initial_condition(IC, attribute, g, vector_from_init_fct = None, global_var = None):
     # implementation of the initial conditions.
     # distributes an attribute on the network, as specified in IC
 
@@ -64,13 +64,16 @@ def set_initial_condition(IC, attribute, g, vector_from_init_fct = None):
         return_H_hist = IC["homophily"]["return_H_hist"]
 
         results = metropolis(   g, 
-                                attribute =  attribute, 
+                                attribute =  attribute,
+                                temperature = IC["homophily"].get("temperature",0),
+                                tolerance = IC["homophily"].get("tolerance",1e-4),
                                 hom_target = IC["homophily"]["hom_target"], 
                                 N_steps = IC["homophily"]["steps"],
                                 return_H_hist = return_H_hist,
                                 dbg = dbg,
                                 recenter = IC["homophily"]["recenter"],
-                                is_category = IC["homophily"]["is_category"])
+                                is_category = IC["homophily"]["is_category"],
+                                global_var = global_var)
         save_metropolis_data(results, g, dbg, return_H_hist)
 
 
@@ -113,7 +116,6 @@ def calc_report_indcs(all_B):
 
     indcs = []
     for i in range(int(np.log10(len(all_B)))):
-        print(i)
         # append np.power(10,i) to indcs
         indcs.append(np.power(10,i))
         indcs.append(2*np.power(10,i))
