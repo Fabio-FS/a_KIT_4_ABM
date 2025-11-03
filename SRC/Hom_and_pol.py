@@ -17,8 +17,8 @@ from scipy.stats import beta
 
 
 
-def calc_polarization(g, name = "behavior_status"):
-    B = np.array(g.vs[name])
+def calc_polarization(g, attribute = "behavior_status"):
+    B = np.array(g.vs[attribute])
     return polarization(B)
 
 def polarization(B):
@@ -30,10 +30,12 @@ def polarization(B):
 
 
 
-def calc_homophily(g, attribute = "behavior_status", flag = 0, qs = 1, is_category = 0):    # function called by the save_homophily function in Save_Functions.py
+def calc_homophily(g, attribute = "behavior_status", recenter_flag = 0, qs = 1, is_category = 0):    # function called by the save_homophily function in Save_Functions.py
     #category is an integer misused as a boolean.
     #   It describes if homophily should be evaluated in terms of metric distance or categories
+
     #qs is a scaling factor for the quantity
+
     #flag describes if the homophily value should be recentered.
     #   When all nodes have the same value, no amount of rewiring can change the homophily.
     #   Depending on the usecase, this might be desirable to interpret as "no homophily (above expected)"
@@ -46,12 +48,12 @@ def calc_homophily(g, attribute = "behavior_status", flag = 0, qs = 1, is_catego
     rc_H = [recenter_H,cat_recenter_H][is_category]
 
     H = hom_n_rc(B,A, qs = qs)
-    if(flag == 0):                              # when I call the function with flag = 0, I want to calculate the homophily and recenter it only if the flag is set to 1 in the graph.
+    if(recenter_flag == 0):                              # when I call the function with flag = 0, I want to calculate the homophily and recenter it only if the flag is set to 1 in the graph.
         if(g["recenter_homophily_flag"] == 1):
             H = H + rc_H(B,A, qs = qs)                      
-    elif(flag == 1):                            # when I call the function with flag = 1, I want to calculate the homophily and recenter it.
+    elif(recenter_flag == 1):                            # when I call the function with flag = 1, I want to calculate the homophily and recenter it.
         H = H + rc_H(B,A, qs = qs)
-    elif(flag == 2):                            # when I call the function with flag = 2, I want to calculate the homophily without recentering it.
+    elif(recenter_flag == 2):                            # when I call the function with flag = 2, I want to calculate the homophily without recentering it.
         H = H    
     return H
 
@@ -97,10 +99,10 @@ def metropolis(g, attribute =  "behavior_status",
                hom_target = 0, recenter = False,
                N_steps = 10, tolerance = 1e-4,
                return_H_hist = False, dbg = False,
-               is_category = 0, temperature = 0.01
+               is_category = 0, temperature = 0.01,
+               global_var = None
                ):
     #N_steps: the maximum number of switching steps
-
     # initialize the history of all the behaviors, this IS VERY MEMORY INTENSIVE. for each time-step of the metropolis algorithm, we store the behavior of all the nodes.
     if(dbg):
         hist_B = np.zeros([N_steps,len(g.vs)])
@@ -112,76 +114,61 @@ def metropolis(g, attribute =  "behavior_status",
     hom_n_rc = [homophily_non_recentered,cat_homophily_non_recentered][is_category]
     rc_H = [recenter_H,cat_recenter_H][is_category]
     Hs[0] = hom_n_rc(B,A)
-    #HS[0] = calc_homophily()
 
-    #print("Initial homophily: ", Hs[0], "Target: ", target, "m2: ", m2)
     if (recenter):
         Hs[0] = Hs[0] + rc_H(B,A)
         g["recenter_homophily_flag"] = 1         # I add a flag to the graph to remember that I recentered the homophily. It's quite ugly, but it's the only way I found to keep track of it.
                                                         # it is needed in the calc_homophily function.
         
-        ### this part is for testing Sven idea. much faster if it works well.
-        #print("real_resc = ", resc, "dummy_resc = ", dummy_resc, "difference = ", resc-dummy_resc, "percentage = ", (resc-dummy_resc)/resc*100, "%")
-# test
-
     else:
         g["recenter_homophily_flag"] = 0
 
-    #g["homophily0"] = Hs[0]
-#    print("Initial homophily: ", Hs[0])
-#    print("Target: ", target)
-#    target = target
+    break_count = N_steps
 
-    while(count < N_steps):
-        #if(count%10000 == 0):
-            #print("Step: ", count)
-        #error = np.abs(Hs[count]-target)
-        #print("Error: ", error)
+    for count in range(N_steps):
         if(tolerance < np.abs(Hs[count]-hom_target)):
-            #print("try")
+            #if tolerance isn't yet reached
+
             i, j = k12[count,0], k12[count,1]
             B2 = B.copy()
             dh = -calc_dh(i,j,B2,A)*m2
-            B2[i], B2[j] = B2[j], B2[i]
 
             h_attempt = Hs[count]+dh
 
             hom_difference = np.abs(Hs[count]-hom_target) - np.abs(h_attempt-hom_target)
             #how close the algorithm got in the previous step minus how close we are this time
+            #if hom_difference > 0:    new value is closer
+            #if hom_difference < 0:    old value is closer
 
             if temperature == 0:
                 if hom_difference >= 0 :
-                    #print("Accepted move: ", count, ", H moved of ", h_attempt-Hs[count])
                     Hs[count+1] = h_attempt
                     B[i], B[j] = B[j], B[i]
                 else:
-                    #print("Rejected move: ", count, "  Error: ", np.abs(Hs[count]-target), "  Attempt: ", np.abs(h_attempt-target))
                     Hs[count+1] = Hs[count]
             else:
                 if np.random.random() < 1 / ( 1   +   np.exp( - (1/temperature) * hom_difference)    ) :
-                    #print("Accepted move: ", count, ", H moved of ", h_attempt-Hs[count])  
                     Hs[count+1] = h_attempt
                     B[i], B[j] = B[j], B[i]
                 else:
-                    #print("Rejected move: ", count, "  Error: ", np.abs(Hs[count]-target), "  Attempt: ", np.abs(h_attempt-target))
                     Hs[count+1] = Hs[count]
 
             if(dbg):
-                hist_B[count,:] = B
-            count = count+1
+                hist_B[count+1,:] = B
         else:
-            Hs[count+1] = Hs[count]
-            count = count +1
-    Hs = Hs
-    g.vs[attribute] = B
+            Hs[count:] = Hs[count]
+            break_count = count
+            break
 
+    if not global_var is None:
+        setattr(global_var,"metropolis_steps",break_count)
+    g.vs[attribute] = B
     
 
     if (not return_H_hist):
         if(not dbg):
             results = (Hs[-1])
     if (return_H_hist):
-
         if(not dbg):
             results = (Hs[-1],Hs)
     if (not return_H_hist):
@@ -191,9 +178,8 @@ def metropolis(g, attribute =  "behavior_status",
     if (return_H_hist):
         if(dbg):
             results = (Hs[-1],Hs, hist_B, A)
-    
-    # I print the final homophily, and I check if the function homophily works correctly:
-    #print("Target: ", target, "Final homophily: ", Hs[-1], " Delta: ", Hs[-1]-target)
+
+    setattr(global_var,"homophily_recentered",float(Hs[-1]))   if recenter    else     setattr(global_var,"homophily",float(Hs[-1]))
 
 
     return results
@@ -210,6 +196,7 @@ def initialize(g, name, N_steps):
     
 
 def calc_dh(k,l,B,A):
+    #switch two nodes k and l. calculate difference in homophily
 
     B2 = B.copy()
     B2[k], B2[l] = B2[l], B2[k]
