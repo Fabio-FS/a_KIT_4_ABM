@@ -113,7 +113,7 @@ def update_UPW_DOW(G,rule, global_var):
         g_h.vs["health_status"] = health_status.tolist()
         #writing the health status to nodes, because I still use that when saving
 
-        global_var.I_peak = max(global_var.I_peak  ,  np.mean(health_status==2))
+        global_var.I_peak = max(global_var.I_peak  ,  float(np.mean(health_status==2)))
 
 #  ████     ████     ████   
 # ██  ██     ██     ██  ██  
@@ -225,7 +225,7 @@ def update_UPW_DOW_SIS(G,rule, global_var):
         g_h.vs["health_status"] = health_status.tolist()
         #writing the health status to nodes, because I still use that when saving
 
-        global_var.I_peak = max(global_var.I_peak  ,  np.mean(health_status==2))
+        global_var.I_peak = max(global_var.I_peak  ,  float(np.mean(health_status==2)))
 
 # ██   ██   ████    ██  ██    ████    ██████  
 # ███ ███  ██  ██   ██  ██     ██     ██      
@@ -313,7 +313,7 @@ def update_upw_mov(G,rule, global_var):
             g_h.vs["health_status"] = health_status.tolist()
             #writing the health status to nodes, because I still use that when saving
 
-            global_var.I_peak = max(global_var.I_peak  ,  np.mean(health_status==2))
+            global_var.I_peak = max(global_var.I_peak  ,  float(np.mean(health_status==2)))
 
     N_infected = np.sum(np.array(g_h.vs["health_status"])==2)
     global_var.first_tick = False
@@ -406,7 +406,7 @@ def update_dow_mov(G,rule, global_var):
             g_h.vs["health_status"] = health_status.tolist()
             #writing the health status to nodes, because I still use that when saving
 
-            global_var.I_peak = max(global_var.I_peak  ,  np.mean(health_status==2))
+            global_var.I_peak = max(global_var.I_peak  ,  float(np.mean(health_status==2)))
 
     N_infected = np.sum(np.array(g_h.vs["health_status"])==2)
     global_var.first_tick = False
@@ -508,7 +508,7 @@ def update_upward_Heav(G,rule, global_var):
         g_h.vs["health_status"] = health_status.tolist()
         #writing the health status to nodes, because I still use that when saving
 
-        global_var.I_peak = max(global_var.I_peak  ,  np.mean(health_status==2))
+        global_var.I_peak = max(global_var.I_peak  ,  float(np.mean(health_status==2)))
 
 def update_downward_Heav(G,rule, global_var):
 
@@ -584,7 +584,7 @@ def update_downward_Heav(G,rule, global_var):
         g_h.vs["health_status"] = health_status.tolist()
         #writing the health status to nodes, because I still use that when saving
 
-        global_var.I_peak = max(global_var.I_peak  ,  np.mean(health_status==2))
+        global_var.I_peak = max(global_var.I_peak  ,  float(np.mean(health_status==2)))
 
 # ██   ██   ████    ██  ██   ██████   ████    
 # ███ ███    ██     ██  ██   ██       ██ ██   
@@ -677,7 +677,7 @@ def update_doped(G,rule, global_var):
         g_h.vs["health_status"] = health_status.tolist()
         #writing the health status to nodes, because I still use that when saving
 
-        global_var.I_peak = max(global_var.I_peak  ,  np.mean(health_status==2))
+        global_var.I_peak = max(global_var.I_peak  ,  float(np.mean(health_status==2)))
 
 def update_mix_3_populations(G, rule, global_var):
 
@@ -799,7 +799,7 @@ def update_mix_3_populations(G, rule, global_var):
         g_h.vs["health_status"] = health_status.tolist()
         #writing the health status to nodes, because I still use that when saving
 
-        global_var.I_peak = max(global_var.I_peak  ,  np.mean(health_status==2))
+        global_var.I_peak = max(global_var.I_peak  ,  float(np.mean(health_status==2)))
 
 def update_doped_mov(G,rule, global_var):
 
@@ -878,7 +878,7 @@ def update_doped_mov(G,rule, global_var):
             g_h.vs["health_status"] = health_status.tolist()
             #writing the health status to nodes, because I still use that when saving
 
-            global_var.I_peak = max(global_var.I_peak  ,  np.mean(health_status==2))
+            global_var.I_peak = max(global_var.I_peak  ,  float(np.mean(health_status==2)))
 
     N_infected = np.sum(np.array(g_h.vs["health_status"])==2)
     global_var.first_tick = False
