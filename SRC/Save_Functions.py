@@ -155,6 +155,12 @@ def calc_mean(G,P_rec, global_var = None):
     if P_rec.get("source",None) == "global_var":
         return float(np.mean(getattr(global_var,P_rec["attribute"])))
     return float(np.mean(G[P_rec["layer"]].vs[P_rec["attribute"]]))
+
+def calc_mean_subgroup(G,P_rec,global_var = None):
+    subgroup_idcs = np.where(    np.array(G[P_rec["layer"]].vs[P_rec["attribute_subgroup_1"]])    ==     P_rec["attribute_subgroup_1_value"])[0]
+    if P_rec.get("source",None) == "global_var":
+        return float(np.mean(getattr(global_var,P_rec["attribute"])[subgroup_idcs]))
+    return float(np.mean(G[P_rec["layer"]].vs[subgroup_idcs][P_rec["attribute"]] ))
     
 
 def calc_median(G,P_rec, global_var = None):
@@ -245,6 +251,7 @@ saving_dictionary = {
     "ALL_int" : pass_ALL_as_int,
     "avg" : calc_mean,
     "mean" : calc_mean,
+    "mean_subgroup" : calc_mean_subgroup,
     "median" : calc_median,
     "var" : calc_var,
     "variance" : calc_var,
