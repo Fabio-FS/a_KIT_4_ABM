@@ -19,29 +19,29 @@ class Global_Vars:
 
 def import_parameters(namefile):
     # namefile is a json file in the JSON format.
-    # first I import everything into data, then I split data into P_lay, P_dyn, P_sim, P_rec
+    # first I import everything into data, then I split data into P_net, P_dyn, P_sim, P_rec
 
     with open(namefile) as f:
         data = json.load(f)
 
-    P_lay = data["P_layer"]
+    P_net = data.get("P_network",data.get("P_layer"))
     P_dyn = data["P_dynamic"]
     P_sim = data["P_simulations"]
-    P_rec = data["P_recordings"]
+    P_rec = data.get("P_record",data.get("P_recordings"))
 
-    return P_lay, P_dyn, P_sim, P_rec
+    return P_net, P_dyn, P_sim, P_rec
 
-def reset_param(P_lay_original,P_sim_original,P_dyn_original,P_rec_original):
-    P_lay = deepcopy(P_lay_original)
+def reset_param(P_net_original,P_sim_original,P_dyn_original,P_rec_original):
+    P_net = deepcopy(P_net_original)
     P_dyn = deepcopy(P_dyn_original)
     P_sim = deepcopy(P_sim_original)
     P_rec = deepcopy(P_rec_original)
-    return P_lay, P_sim, P_dyn, P_rec
+    return P_net, P_sim, P_dyn, P_rec
 
-def run_sim(P_layer, P_dynamic, P_simulations, P_recordings, return_G = False):
+def run_sim(P_network, P_dynamic, P_simulations, P_record, return_G = False):
 
     # initialize the graph creating all the needed layers. for each layer create the network
-    G = init_graph(P_layer) # G is a list of graphs.
+    G = init_graph(P_network) # G is a list of graphs.
 
     global_var = Global_Vars()
     #global_var contains variables that all functions should have access to in principle
@@ -50,7 +50,7 @@ def run_sim(P_layer, P_dynamic, P_simulations, P_recordings, return_G = False):
     # initializes the dynamic on the graph and returns a list of rules for the updating function.
     list_of_rules = init_rules(G, P_dynamic,global_var)
     
-    Data = run_temporal_evolution(G, list_of_rules, P_simulations, P_recordings,global_var)
+    Data = run_temporal_evolution(G, list_of_rules, P_simulations, P_record,global_var)
 
     if return_G:
         return Data, G
@@ -65,31 +65,31 @@ def run_sim(P_layer, P_dynamic, P_simulations, P_recordings, return_G = False):
 # ██  ██   ██████     ██     ██   ██   ████    ██  ██   ██  ██  
 
 
-def init_graph(P_lay):
+def init_graph(P_net):
     G = []
-    for i in range(P_lay["N_layers"]):
-        p_lay_i = P_lay["Layer_" + str(i)]
-        N = P_lay["N_nodes"]
+    for i in range(P_net["N_layers"]):
+        P_layer = P_net["Layer_" + str(i)]
+        N = P_net["N_nodes"]
 
-        if(p_lay_i["type"] == "ER_m"):
-            g = ig.Graph.Erdos_Renyi(n=N, p=p_lay_i["link_m"]/(N-1))
-        elif(p_lay_i["type"] == "ER_p"):
-            g = ig.Graph.Erdos_Renyi(n=N, p=p_lay_i["p"])
-        elif(p_lay_i["type"] == "file"):
-            #if p_lay_i has not the field "format" try to load the file with igraph.Load without forcing the format:
-            if("format" not in p_lay_i):
-                g = ig.Graph.Load(p_lay_i["filename"])
+        if(P_layer["type"] == "ER_m"):
+            g = ig.Graph.Erdos_Renyi(n=N, p=P_layer["link_m"]/(N-1))
+        elif(P_layer["type"] == "ER_p"):
+            g = ig.Graph.Erdos_Renyi(n=N, p=P_layer["p"])
+        elif(P_layer["type"] == "file"):
+            #if P_layer has not the field "format" try to load the file with igraph.Load without forcing the format:
+            if("format" not in P_layer):
+                g = ig.Graph.Load(P_layer["filename"])
             else:
-                g = ig.Graph.Read_Ncol(p_lay_i["filename"], format = p_lay_i["format"])
-        elif(p_lay_i["type"] == "Lattice"):
-            if(p_lay_i["Lx"]*p_lay_i["Ly"] != N):
-                print("GRAPH SIZE WARNING: Lx*Ly != N: " + str(p_lay_i["Lx"]*p_lay_i["Ly"]) + " != " + str(N)) 
-            g = ig.Graph.Lattice(dim=[p_lay_i["Lx"], p_lay_i["Ly"]], circular=p_lay_i.get("circular",False), nei = p_lay_i["nei"])
-        elif(p_lay_i["type"] == "Moore_Lattice"):
+                g = ig.Graph.Read_Ncol(P_layer["filename"], format = P_layer["format"])
+        elif(P_layer["type"] == "Lattice"):
+            if(P_layer["Lx"]*P_layer["Ly"] != N):
+                print("GRAPH SIZE WARNING: Lx*Ly != N: " + str(P_layer["Lx"]*P_layer["Ly"]) + " != " + str(N)) 
+            g = ig.Graph.Lattice(dim=[P_layer["Lx"], P_layer["Ly"]], circular=P_layer.get("circular",False), nei = P_layer["nei"])
+        elif(P_layer["type"] == "Moore_Lattice"):
             #a lattice with Moore neighborhood, i.e. 8 neighbors
             #a Cellular automaton
             #number of agents
-            N = p_lay_i["Lx"]*p_lay_i["Ly"]
+            N = P_layer["Lx"]*P_layer["Ly"]
             #set up adjacency matrix
             A = np.zeros(shape = (N,N))
 
@@ -98,14 +98,14 @@ def init_graph(P_lay):
             #NW-SE:      +x+1
             #NE-SW:      +x-1 (conflict with horiz. if x=2)
 
-            if p_lay_i["Lx"] == 1:
+            if P_layer["Lx"] == 1:
                 #special case: line graph
                 A += np.diag(np.ones(shape = N-1), 1 )    #→→→→ vertical = horizontal conections +1 (in adj matrix: one off the diagonal)
-                if p_lay_i["circular"]:
+                if P_layer["circular"]:
                     A[0,N-1] = 1
                 A += A.T
                  
-            elif p_lay_i["Lx"] == 2:
+            elif P_layer["Lx"] == 2:
                 #special treatment because: ↙↙ NE-SW connections are same distance as →→ horizontal connections
                 for i in range(N):
                     if i == 0:   #first row
@@ -121,7 +121,7 @@ def init_graph(P_lay):
                         A[i,2*(i//2)-2:2*(i//2)-2+6] = np.array([1,1,0,1,1,1])
                     else:                                      #every other second row
                         A[i,2*(i//2)-2:2*(i//2)-2+6] = np.array([1,1,1,0,1,1])
-                if p_lay_i["circular"] == True:
+                if P_layer["circular"] == True:
                     A[N-1,1] = 1    #connnecting last agent with 2nd
                     A[N-2,0] = 1    #connecting 2nd to last agent with first
                     A[N-1,0] = 1    #connnecting last agent with 1st
@@ -130,7 +130,7 @@ def init_graph(P_lay):
                 A = np.clip(A,a_min=0,a_max=1)
 
             else:   #xdim is > 2
-                Lx = p_lay_i["Lx"]
+                Lx = P_layer["Lx"]
                 #examples always N=9, Lx=3
 
                 #adding 1s to adjacency matrix
@@ -156,7 +156,7 @@ def init_graph(P_lay):
                 #e.g.        2                                  6
                 #
                 #3. ↙↙↙↙ NE-SW   correction:    removing connection between left-most and right-most in same line   
-                if not p_lay_i["circular"]:
+                if not P_layer["circular"]:
                     A[np.arange(0,N,Lx)   ,   np.arange(Lx-1,N+Lx-1,Lx)] = 0        
                     #e.g.     0,3,6                      2,5,8  
                     
@@ -164,7 +164,7 @@ def init_graph(P_lay):
                 A *= A.T
 
                 #adding connections for circular lattices
-                if p_lay_i["circular"] == True:
+                if P_layer["circular"] == True:
 
                     #1. ↓↓↓↓ adding vertical connections between first and last line
                     A[np.arange(0,Lx,1)     ,    np.arange(N-Lx,N,1)]    =   1
@@ -189,18 +189,18 @@ def init_graph(P_lay):
                     A = np.clip(A,a_min=0,a_max=1)
             A = np.asarray(A, dtype=int)
             g = ig.Graph.Adjacency(A, mode="undirected")
-        elif(p_lay_i["type"] == "WS"):
-            if(np.power(p_lay_i["L"],p_lay_i["D"]) != N):
-                print("GRAPH SIZE WARNING: L^D != N: " + str(np.power(p_lay_i["L"],p_lay_i["D"])) + " != " + str(N))
-            g = ig.Graph.Watts_Strogatz(dim=p_lay_i["D"], size=p_lay_i["L"], nei=p_lay_i["NFN"], p=p_lay_i["P"])
-        elif(p_lay_i["type"] == "kRRG"):
-            g = ig.Graph.K_Regular(n = N, k = p_lay_i["k"])
-        elif(p_lay_i["type"] == "BA"):
-            g = ig.Graph.Barabasi(n = N, m =  p_lay_i["m"])
-        elif(p_lay_i["type"] == "2islands"):
+        elif(P_layer["type"] == "WS"):
+            if(np.power(P_layer["L"],P_layer["D"]) != N):
+                print("GRAPH SIZE WARNING: L^D != N: " + str(np.power(P_layer["L"],P_layer["D"])) + " != " + str(N))
+            g = ig.Graph.Watts_Strogatz(dim=P_layer["D"], size=P_layer["L"], nei=P_layer["NFN"], p=P_layer["P"])
+        elif(P_layer["type"] == "kRRG"):
+            g = ig.Graph.K_Regular(n = N, k = P_layer["k"])
+        elif(P_layer["type"] == "BA"):
+            g = ig.Graph.Barabasi(n = N, m =  P_layer["m"])
+        elif(P_layer["type"] == "2islands"):
 
-            p = p_lay_i["p"]
-            k = p_lay_i["k"]
+            p = P_layer["p"]
+            k = P_layer["k"]
             #island1 = ig.Graph.Erdos_Renyi(n=N//2, p=p_lay_i["k"]/(N//2-1))
             #island2 = ig.Graph.Erdos_Renyi(n=N-N//2, p=p_lay_i["k"]/((N-N//2)-1))
 
@@ -252,7 +252,7 @@ def init_graph(P_lay):
             g.vs["membership"] = membership
             #print(g.vs["membership"])
         else:
-            print("GRAPH: " + p_lay_i["type"] + " not implemented yet")
+            print("GRAPH: " + P_layer["type"] + " not implemented yet")
 
         G.append(g)
     return G
@@ -279,16 +279,16 @@ def init_rules(G,P_dyn,global_var):
 
     return LotR # list of rules
 
-def run_temporal_evolution(G, list_of_rules, P_simulations, P_recordings,global_var):
+def run_temporal_evolution(G, list_of_rules, P_simulations, P_record,global_var):
     # G is the list of graph-layers, each item is one graph
     # list_of_rules is a list of dictionaries, each containing parameters for one updating function
-    # P_recordings is the dictionary with the parameters for the recordings
+    # P_record is the dictionary with the parameters for recording
 
     np.set_printoptions(threshold=sys.maxsize)
     #necessary for networks with >999 agents.
     #otherwise numpy prints every array as [y_0, y_1, ..., y_n]
 
-    L_REC_0, L_REC, L_REC_1, results = init_recording(P_recordings, P_simulations["T"])
+    L_REC_0, L_REC, L_REC_1, results = init_recording(P_record, P_simulations["T"])
     # L_REC_0 is the list of recordings to be done BEFORE the simulations begin
     # L_REC is the list of recordings to be done DURING the simulations
     # L_REC_1 is the list of recordings to be done AFTER the simulations end

@@ -32,7 +32,7 @@ class SingleVariable_Results:
 #  ██   ██ ███████  ██████  ██████  ██   ██ ██████  ██ ██   ████  ██████  ███████ 
 
 
-def init_recording(P_recording, T_max):
+def init_recording(P_record, T_max):
 
     # initialize the recordings
     L_REC_0 = []                        # what to record this at the BEGINNING of the simulation
@@ -41,9 +41,9 @@ def init_recording(P_recording, T_max):
     #where all results will be saved:
     results = Results()
 
-    for i in range(P_recording["N"]):
+    for i in range(P_record["N"]):
         # for each recording i, read the parameters and initialize the recording
-        P_rec_i = P_recording["Recording_" + str(i)]
+        P_rec_i = P_record["Recording_" + str(i)]
         # for each of recording, I calculate how often it appears:
         P_rec_i["total_count"] = 0
 
