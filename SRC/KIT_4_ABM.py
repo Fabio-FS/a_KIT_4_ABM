@@ -9,7 +9,7 @@ from Save_Functions import *
 from Write_functions_csv import *
 import sys
 from copy import deepcopy
-
+from difflib import get_close_matches    #for suggesting update_function_keys
 import json
 
 class Global_Vars:
@@ -270,10 +270,20 @@ def init_rules(G,P_dyn,global_var):
     for i in range(P_dyn["N"]):
         # for each dynamic i, read the parameters and initialize the rule
         P_dyn_i = P_dyn["Dynamic_" + str(i)]
-        P_rule = init_fct_dict[P_dyn_i["func"]](P_dyn_i, G, global_var)
-        #here the init function is called (referenced in init_fct_dict with the key P_dyn_i["func"]
+
+        try:
+            init_function = init_fct_dict[P_dyn_i["func"]]
+        except KeyError:
+            print(f"Invalid init function key: {P_dyn_i["func"]}")
+            suggestion = get_close_matches(P_dyn_i["func"], init_fct_dict.keys(), n=1)
+            if suggestion:
+                print(f"Did you mean {suggestion[0]} ?")
+            exit()
+
+        P_rule = init_function(P_dyn_i, G, global_var)
+        #here the init function is called    (referenced in init_fct_dict with the key P_dyn_i["func"])
         #That function initializes the dynamics
-        # and returns a P_rule, a dictionary with all parameters necessary for the update function
+        # and returns a    P_rule    , a dictionary with all parameters necessary for the update function
 
         LotR.append(P_rule)
 
@@ -344,12 +354,16 @@ def convert_results_to_float(results):
 
 def single_update(G, P_rule, global_var = Global_Vars()):
     update_fct_name = P_rule["func"]
+
     try:
-        update_fct_dict[update_fct_name](G, P_rule, global_var)  # Call the function
+        update_fct = update_fct_dict[update_fct_name]
     except KeyError:
-        print("I cannot update the following rule:" + update_fct_name)
-        print("ERROR: single_update of rule(" + update_fct_name + ") NOT IMPLEMENTED YET, or something is broken in it")
-    pass
+        print(f"Invalid update function key: {update_fct_name}")
+        suggestion = get_close_matches(update_fct_name, update_fct_dict.keys(), n=1)
+        if suggestion:
+            print(f"Did you mean {suggestion[0]} ?")
+
+    update_fct(G, P_rule, global_var)  # Call the function
 
 
 
