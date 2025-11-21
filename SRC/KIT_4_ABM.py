@@ -41,19 +41,19 @@ def reset_param(P_net_original,P_sim_original,P_dyn_original,P_rec_original):
 def run_sim(P_network, P_dynamic, P_simulations, P_record, return_G = False):
 
     # initialize the graph creating all the needed layers. for each layer create the network
-    G = init_graph(P_network) # G is a list of graphs.
+    Graphs = init_graph(P_network) # G is a list of graphs.
 
     global_var = Global_Vars()
     #global_var contains variables that all functions should have access to in principle
     #for the moment it's only stop_condition
 
     # initializes the dynamic on the graph and returns a list of rules for the updating function.
-    list_of_rules = init_rules(G, P_dynamic,global_var)
+    list_of_rules = init_rules(Graphs, P_dynamic,global_var)
     
-    Data = run_temporal_evolution(G, list_of_rules, P_simulations, P_record,global_var)
+    Data = simulate_and_return_data(Graphs, list_of_rules, P_simulations, P_record,global_var)
 
     if return_G:
-        return Data, G
+        return Data, Graphs
     return Data
 
 # ██  ██   ██████   ██████   ██   ██   ████    █████    ██  ██  
@@ -279,7 +279,7 @@ def init_rules(G,P_dyn,global_var):
 
     return LotR # list of rules
 
-def run_temporal_evolution(G, list_of_rules, P_simulations, P_record,global_var):
+def simulate_and_return_data(Graphs, list_of_rules, P_simulations, P_record,global_var):
     # G is the list of graph-layers, each item is one graph
     # list_of_rules is a list of dictionaries, each containing parameters for one updating function
     # P_record is the dictionary with the parameters for recording
@@ -298,7 +298,8 @@ def run_temporal_evolution(G, list_of_rules, P_simulations, P_record,global_var)
     # save the state of the system BEFORE the simulations begins
     for P_rec_i in L_REC_0:
         #P_rec_i contains all parameters for saving one single variable before the simulation
-        single_save(G, P_rec_i, results, global_var, internal_tick = 0)     # 0 means that the time step is before the simulations begin
+        single_save(Graphs, P_rec_i, results, global_var, internal_tick = 0)     # 0 means that the time step is before the simulations begin
+        #writes data to              results
 
     for internal_tick in range(1,P_simulations["T"]+1):
         global_var.current_timestep = internal_tick
@@ -306,22 +307,25 @@ def run_temporal_evolution(G, list_of_rules, P_simulations, P_record,global_var)
         if not global_var.stop_condition:
             # for each time step, advance the simulation one increment
             for P_rule in list_of_rules:
-                single_update(G, P_rule, global_var)
+                single_update(Graphs, P_rule, global_var)
         
             # save the state of the system DURING the simulation
             # with the possibility to save the state every N steps via P_rec_i["DT"]
             for P_rec_i in L_REC:
                 if(internal_tick%P_rec_i["DT"] == 0):
-                    single_save(G, P_rec_i, results, global_var, internal_tick = internal_tick)
+                    single_save(Graphs, P_rec_i, results, global_var, internal_tick = internal_tick)
+                    #writes data to              results
 
         if global_var.stop_condition:
             for P_rec_i in L_REC:
-                batch_save(G, P_rec_i,results, global_var, internal_tick = internal_tick, T = P_simulations["T"])
+                batch_save(Graphs, P_rec_i,results, global_var, internal_tick = internal_tick, T = P_simulations["T"])
+                #writes lots of data to    results
             break
 
     # save the state of the system AFTER the simulations end
     for P_rec_i in L_REC_1:
-        single_save(G, P_rec_i, results, global_var, internal_tick = -1)     # -1 means that the time step is after the simulations end
+        single_save(Graphs, P_rec_i, results, global_var, internal_tick = -1)     # -1 means that the time step is after the simulations end
+        #writes data to              results
 
 
     convert_results_to_float(results)
