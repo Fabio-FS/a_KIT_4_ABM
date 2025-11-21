@@ -45,7 +45,8 @@ def run_sim(P_network, P_dynamic, P_simulations, P_record, return_G = False):
 
     global_var = Global_Vars()
     #global_var contains variables that all functions should have access to in principle
-    #for the moment it's only stop_condition
+    global_var.functions = Global_Vars()
+    #global_var.functions will contain functions I want to have
 
     # initializes the dynamic on the graph and returns a list of rules for the updating function.
     list_of_rules = init_rules(Graphs, P_dynamic,global_var)
