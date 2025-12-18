@@ -548,6 +548,7 @@ def init_mix_3_populations(P_dyn, G, global_var):
     bl = P_dyn["BEHAVIOR"]["layer"]     # layer where the behavior is imprinted
 
     global_var.b_neighbors = [np.array(G[bl].neighbors(i)) for i in range(G[bl].vcount())]
+    global_var.B_neighbor_indexing = np.array(global_var.b_neighbors)
     global_var.h_neighbors = [np.array(G[hl].neighbors(i)) for i in range(G[hl].vcount())]
     global_var.functions.row_mean_B = [row_mean_ragged,row_mean_fast][is_regular(G[bl])]
     global_var.functions.row_mean_H = [row_mean_ragged,row_mean_fast][is_regular(G[hl])]
