@@ -6,7 +6,7 @@ import numpy as np
 import igraph as ig
 from Init_and_Dynamics import *
 from Save_Functions import *
-from Write_functions_csv import *
+from Write_functions import *
 import sys
 from copy import deepcopy
 from difflib import get_close_matches    #for suggesting update_function_keys

@@ -1,5 +1,6 @@
 import numpy as np
 from Hom_and_pol import calc_homophily, calc_polarization
+from Write_functions import *
 
 #   ████    ██         ██      ████     ████    ██████    ████   
 #  ██  ██   ██        ████    ██  ██   ██  ██   ██       ██  ██  
@@ -20,7 +21,7 @@ class SingleVariable_Results:
     #each object of this class will store all results for a specific variable i
     #each object has two attributes: .time and .data
     def __init__(self,P_rec_i):
-        empty_vector = np.empty(P_rec_i["total_count"], dtype=object)
+        empty_vector = np.empty(P_rec_i["total_count"], dtype=np.float64)
         self.data = empty_vector.copy()
         self.time = P_rec_i["time_vector"]
 
