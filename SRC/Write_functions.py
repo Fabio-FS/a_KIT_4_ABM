@@ -92,7 +92,12 @@ def create_h5(P_record):
 
     filename = P_record["filename"] + ".h5"
 
-    with h5py.File(filename, "w") as f:
+    with h5py.File(filename, "w", libver="latest") as f:
+
+        if P_record.get("live_monitoring",True):
+            f.swmr_mode = True
+        #needed for live monitoring.
+        #in swmr mode, multiple processes can read 
 
         sweep_flag = False
         if not P_record.get("sweep_codes") is None:
@@ -150,8 +155,7 @@ def append_h5(P_rec, res):
             for attr in fieldnames:
                 values = f[f"{attr}/values"]       
                 values.resize(values.shape[0] + 1, axis=0)
-                print(getattr(getattr(res, attr), 'data'))
                 values[-1,:] = getattr(getattr(res, attr), 'data')
-                #[trial, timestamps]
+
                 f.flush() #prevents corruption in case of aborting simulation with Ctrl C
         
