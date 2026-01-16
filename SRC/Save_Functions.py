@@ -217,10 +217,6 @@ def calc_frac_subgroup(G, P_rec, global_var = None):
     
     return float( np.mean(np.array(G[P_rec["layer"]].vs[subgroup_index][P_rec["attribute"]])   ==   P_rec["attribute_value"]) * subgroup_size  )
 
-def calc_histogram(G,P_rec, global_var = None):
-    RES = np.histogram(G[P_rec["layer"]].vs[P_rec["attribute"]])
-    return RES
-
 def calc_homophily_wrapper(G,P_rec, global_var = None):
     RES = float(calc_homophily(G[P_rec["layer"]], P_rec["attribute"], recenter_flag = P_rec["recenter_flag"], qs = P_rec["qs"], is_category = P_rec["is_category"]))
     return RES
@@ -266,8 +262,6 @@ saving_dictionary = {
     "frac" : calc_frac,
     "fraction" : calc_frac,
     "frac_subgroup" : calc_frac_subgroup,
-    "hist" : calc_histogram,
-    "histogram" : calc_histogram,
     "hom" : calc_homophily_wrapper, 
     "homophily" : calc_homophily_wrapper,
     "homophily_recentered" : calc_homophily_recentered_wrapper,
