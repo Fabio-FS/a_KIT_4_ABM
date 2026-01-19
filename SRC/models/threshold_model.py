@@ -39,7 +39,7 @@ def calc_protection_probability_regular(behaviors, N_infected, global_var,
     return probability
 
 
-def calc_protection_probability(behaviors, N_infected, global_var,
+def calc_protection_probability_irregular(behaviors, N_infected, global_var,
                                 a_B = 6, a_Ni = 25, mu = 0.75,
                                 theta = 0.04, Bi_thr = 0.5, BG_thr = 0.5):
 
@@ -548,11 +548,11 @@ def init_mix_3_populations(P_dyn, G, global_var):
     bl = P_dyn["BEHAVIOR"]["layer"]     # layer where the behavior is imprinted
 
     global_var.b_neighbors = [np.array(G[bl].neighbors(i)) for i in range(G[bl].vcount())]
-    global_var.B_neighbor_indexing = np.array(global_var.b_neighbors)
+    global_var.B_neighbor_indexing = np.array(global_var.b_neighbors) if is_regular(G[bl]) else None
     global_var.h_neighbors = [np.array(G[hl].neighbors(i)) for i in range(G[hl].vcount())]
     global_var.functions.row_mean_B = [row_mean_ragged,row_mean_fast][is_regular(G[bl])]
     global_var.functions.row_mean_H = [row_mean_ragged,row_mean_fast][is_regular(G[hl])]
-    global_var.functions.calc_protection_probability = [calc_protection_probability,calc_protection_probability_regular][is_regular(G[bl])]
+    global_var.functions.calc_protection_probability = [calc_protection_probability_irregular,calc_protection_probability_regular][is_regular(G[bl])]
     global_var.N_nodes_B = G[bl].vcount()
     global_var.N_nodes_H = G[hl].vcount()
 
@@ -702,13 +702,13 @@ def init_upw_dow(P_dyn, G,global_var):
 
     global_var.functions.row_mean_B = [row_mean_ragged,row_mean_fast][is_regular(G[bl])]
     global_var.functions.row_mean_H = [row_mean_ragged,row_mean_fast][is_regular(G[hl])]
-    global_var.functions.calc_protection_probability = [calc_protection_probability,calc_protection_probability_regular][is_regular(G[bl])]
+    global_var.functions.calc_protection_probability = [calc_protection_probability_irregular,calc_protection_probability_regular][is_regular(G[bl])]
                                                         
     for i,vertex in enumerate(G[hl].vs):
         vertex["b_neighbors"] = G[bl].neighbors(i)
         vertex["h_neighbors"] = G[hl].neighbors(i)
     global_var.b_neighbors = [np.array(G[bl].neighbors(i)) for i in range(G[bl].vcount())]
-    global_var.B_neighbor_indexing = np.array(global_var.b_neighbors)
+    global_var.B_neighbor_indexing = np.array(global_var.b_neighbors) if is_regular(G[bl]) else None
     global_var.h_neighbors = [np.array(G[hl].neighbors(i)) for i in range(G[hl].vcount())]
     global_var.N_nodes_B = G[bl].vcount()
     global_var.N_nodes_H = G[hl].vcount()
@@ -760,7 +760,7 @@ def init_upw_dow(P_dyn, G,global_var):
 
         for eq_step in range(equil_steps):
 
-            probability = calc_protection_probability(behavior, N_infected, global_var,
+            probability = global_var.functions.calc_protection_probability(behavior, N_infected, global_var,
                                                       a_B = a_B, a_Ni = a_Ni, mu = mu,
                                                       theta = Ni_thr, Bi_thr = Bi_thr, BG_thr = BG_thr)
             behavior, beta = update_beta(probability, N_infected, max_behavior, beta0, g_b.vcount())
