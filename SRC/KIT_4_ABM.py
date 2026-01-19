@@ -51,7 +51,7 @@ def run_sim(P_network, P_dynamic, P_simulations, P_record, return_G = False):
     # initializes the dynamic on the graph and returns a list of rules for the updating function.
     list_of_rules = init_rules(Graphs, P_dynamic,global_var)
     
-    Data = simulate_and_return_data(Graphs, list_of_rules, P_simulations, P_record,global_var)
+    Data = simulate_and_return_data(Graphs, list_of_rules, P_simulations, P_record,global_var, P_network)
 
     if return_G:
         return Data, Graphs
@@ -255,6 +255,7 @@ def init_graph(P_net):
         else:
             print("GRAPH: " + P_layer["type"] + " not implemented yet")
 
+        P_net["N_nodes"] = g.vcount()
         G.append(g)
     return G
 
@@ -290,7 +291,7 @@ def init_rules(G,P_dyn,global_var):
 
     return LotR # list of rules
 
-def simulate_and_return_data(Graphs, list_of_rules, P_simulations, P_record,global_var):
+def simulate_and_return_data(Graphs, list_of_rules, P_simulations, P_record,global_var, P_network = {}):
     # G is the list of graph-layers, each item is one graph
     # list_of_rules is a list of dictionaries, each containing parameters for one updating function
     # P_record is the dictionary with the parameters for recording
@@ -299,7 +300,7 @@ def simulate_and_return_data(Graphs, list_of_rules, P_simulations, P_record,glob
     #necessary for networks with >999 agents.
     #otherwise numpy prints every array as [y_0, y_1, ..., y_n]
 
-    L_REC_0, L_REC, L_REC_1, results = init_recording(P_record, P_simulations["T"])
+    L_REC_0, L_REC, L_REC_1, results = init_recording(P_record, P_simulations["T"], P_network)
     # L_REC_0 is the list of recordings to be done BEFORE the simulations begin
     # L_REC is the list of recordings to be done DURING the simulations
     # L_REC_1 is the list of recordings to be done AFTER the simulations end

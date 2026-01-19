@@ -2,6 +2,7 @@ import csv
 import json
 import numpy as np
 import h5py
+import KIT_4_ABM as kit
 
 def write_csv(P_rec, res, sweep_parameters = None):
 
@@ -88,7 +89,7 @@ def sanity_check_csv(P_rec, res, sweep_parameters = None, trim = 20):
             
         writer.writerow(row)
 
-def create_h5(P_record):
+def create_h5(P_record, P_network = {}):
 
     filename = P_record["filename"] + ".h5"
 
@@ -99,13 +100,12 @@ def create_h5(P_record):
         #needed for live monitoring.
         #in swmr mode, multiple processes can read 
 
-        sweep_flag = False
+        total_sweep_steps = 1
         if not P_record.get("sweep_codes") is None:
             f.create_dataset(
                 "sweep_codes",
                 data = P_record.get("sweep_codes")
             )
-            sweep_flag = True
             P_record["sweep_flag"] = True
             total_sweep_steps = P_record.get("sweep_codes").shape[1]
             P_record["total_sweep_steps"] = total_sweep_steps
@@ -120,22 +120,15 @@ def create_h5(P_record):
                 data = P_rec_i["time_vector"]
             )
 
-            if sweep_flag:
-                grp.create_dataset(
-                    "values",
-                    shape=(total_sweep_steps, 0, len(P_rec_i["time_vector"])),      # initial shape
-                    maxshape=(total_sweep_steps, None, len(P_rec_i["time_vector"])),# unlimited 2nd dim
-                    chunks=(total_sweep_steps, 1, len(P_rec_i["time_vector"])),     # one trial per chunk
-                    dtype="float64"
-                )
-            else:
-                grp.create_dataset(
-                    "values",
-                    shape=(0, len(P_rec_i["time_vector"])),      # initial shape
-                    maxshape=(None, len(P_rec_i["time_vector"])),# unlimited first dim
-                    chunks=(1, len(P_rec_i["time_vector"])),     # one trial per chunk
-                    dtype="float64"
-                )
+            N_values = P_rec_i["N_values"]
+
+            grp.create_dataset(
+                "values",
+                shape=   (total_sweep_steps, 0   , len(P_rec_i["time_vector"]), N_values),      # initial shape
+                maxshape=(total_sweep_steps, None, len(P_rec_i["time_vector"]), N_values),      # unlimited 2nd dim
+                chunks=  (total_sweep_steps, 1   , len(P_rec_i["time_vector"]), N_values),      # one trial per chunk
+                dtype="float64"
+            )
 
 def append_h5(P_rec, res):
 
@@ -144,18 +137,10 @@ def append_h5(P_rec, res):
     with h5py.File(filename, "a") as f:
         fieldnames = [attr for attr in dir(res) if hasattr(getattr(res, attr), 'data')]
 
-        if P_rec.get("sweep_flag", False):
-            for attr in fieldnames:
-                values = f[f"{attr}/values"]
-                values.resize(values.shape[1] + 1, axis=1)
-                values[:,-1,:] = getattr(getattr(res, attr), 'data').reshape(values.shape[0],values.shape[2])
-                #[parameter combination, trial, timestamps]
-                f.flush() #prevents corruption in case of aborting simulation with Ctrl C
-        else:
-            for attr in fieldnames:
-                values = f[f"{attr}/values"]       
-                values.resize(values.shape[0] + 1, axis=0)
-                values[-1,:] = getattr(getattr(res, attr), 'data')
-
-                f.flush() #prevents corruption in case of aborting simulation with Ctrl C
+        for attr in fieldnames:
+            values = f[f"{attr}/values"]
+            values.resize(values.shape[1] + 1, axis=1)
+            values[:,-1,:,:] = getattr(getattr(res, attr), 'data').reshape(values.shape[0],values.shape[2],values.shape[3])
+            #[parameter combination, trial, timestamps, N_values per network]
+            f.flush() #prevents corruption in case of aborting simulation with Ctrl C
         

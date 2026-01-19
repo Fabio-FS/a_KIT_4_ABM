@@ -21,7 +21,7 @@ class SingleVariable_Results:
     #each object of this class will store all results for a specific variable i
     #each object has two attributes: .time and .data
     def __init__(self,P_rec_i):
-        empty_vector = np.empty(P_rec_i["total_count"], dtype=np.float64)
+        empty_vector = np.empty((P_rec_i["total_count"],P_rec_i["N_values"]), dtype=np.float64)
         self.data = empty_vector.copy()
         self.time = P_rec_i["time_vector"]
 
@@ -33,7 +33,7 @@ class SingleVariable_Results:
 #  ██   ██ ███████  ██████  ██████  ██   ██ ██████  ██ ██   ████  ██████  ███████ 
 
 
-def init_recording(P_record, T_max):
+def init_recording(P_record, T_max, P_network = {}):
 
     # initialize the recordings
     L_REC_0 = []                        # what to record this at the BEGINNING of the simulation
@@ -77,6 +77,11 @@ def init_recording(P_record, T_max):
         
         if P_rec_i["total_count"] > 0:
             # if at least one of the conditions is satisfied, initialize the results for single variable
+
+            P_rec_i["N_values"] = 1
+            if P_rec_i["func"] == "ALL" or P_rec_i["func"] == "ALL_int":
+                P_rec_i["N_values"] = kit.init_graph(P_network)[0].vcount()
+
             setattr(results, P_rec_i["column_name"], SingleVariable_Results(P_rec_i))
 
     return L_REC_0, L_REC, L_REC_1, results      # list of recordings at the beginning of the simulation, during the simulation, and at the end of the simulation
@@ -96,7 +101,7 @@ def single_save(G, P_rec_i, results, global_var, internal_tick = -10):
     col_name  = P_rec_i["column_name"]
 
     idx = (internal_tick  +   (P_rec_i["END"]==True))   *  (1 - (internal_tick == -1))
-    getattr(results,col_name).data[idx] = RES             # RES  is saved in position idx of results.name.data
+    getattr(results,col_name).data[idx,:] = RES             # RES  is saved in position idx of results.name.data
 
 def batch_save(G, P_rec_i, results, global_var, internal_tick = -10, T=500):
     #writes many values at once to the Results object
