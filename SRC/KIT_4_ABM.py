@@ -1,16 +1,19 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-
+#import modules
 import numpy as np
 import igraph as ig
-from Init_and_Dynamics import *
-from Save_Functions import *
-from Write_functions import *
 import sys
 from copy import deepcopy
 from difflib import get_close_matches    #for suggesting update_function_keys
 import json
+
+#import own modules
+from Load_Models import *   #this script runs and imports all functions for Health-Behavior models defined in the directory models
+from Save_Functions import *   #functions for extracting information from the simulation
+from Write_functions import *    #functions to save write extracted information to disk
+
 
 class Global_Vars:
     def __init__(self):
