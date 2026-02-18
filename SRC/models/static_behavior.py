@@ -87,7 +87,7 @@ def init_static(P_dyn, G, global_var):
     bl = P_dyn["BEHAVIOR"]["layer"]     # layer where the behavior is imprinted
     
 
-    G[hl].vs["I2R"]   = P_dyn["I2R"]                                                            # for each node sets the gamma
+    G[hl].vs["I2R"]   = P_dyn["HEALTH"]["I2R"]                                                            # for each node sets the gamma
     G[bl].vs["PB_susc"] = P_dyn["HEALTH"]["beta0"]
 
     # sets the initial condition for each node
