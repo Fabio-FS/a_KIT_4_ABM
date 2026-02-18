@@ -89,7 +89,7 @@ def sanity_check_csv(P_rec, res, sweep_parameters = None, trim = 20):
             
         writer.writerow(row)
 
-def create_h5(P_record, P_network = {}):
+def create_h5(P_record):
 
     filename = P_record["filename"] + ".h5"
 
@@ -106,7 +106,6 @@ def create_h5(P_record, P_network = {}):
                 "sweep_codes",
                 data = P_record.get("sweep_codes")
             )
-            P_record["sweep_flag"] = True
             total_sweep_steps = P_record.get("sweep_codes").shape[1]
             P_record["total_sweep_steps"] = total_sweep_steps
 
@@ -115,18 +114,20 @@ def create_h5(P_record, P_network = {}):
 
             grp = f.require_group(P_rec_i["column_name"])
 
+            time_vector = P_rec_i["time_vector"]
+
             grp.create_dataset(
                 "timestamps",
-                data = P_rec_i["time_vector"]
+                data = time_vector
             )
 
             N_values = P_rec_i["N_values"]
 
             grp.create_dataset(
                 "values",
-                shape=   (total_sweep_steps, 0   , len(P_rec_i["time_vector"]), N_values),      # initial shape
-                maxshape=(total_sweep_steps, None, len(P_rec_i["time_vector"]), N_values),      # unlimited 2nd dim
-                chunks=  (total_sweep_steps, 1   , len(P_rec_i["time_vector"]), N_values),      # one trial per chunk
+                shape=   (total_sweep_steps, 0   , len(time_vector), N_values),      # initial shape : (parameter configs, trials, timesteps, values saved per config-trial-timestep)
+                maxshape=(total_sweep_steps, None, len(time_vector), N_values),      # unlimited 2nd dim
+                chunks=  (total_sweep_steps, 1   , len(time_vector), N_values),      # one trial per chunk
                 dtype="float64"
             )
 
