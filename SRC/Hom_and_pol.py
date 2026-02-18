@@ -30,11 +30,11 @@ def polarization(B):
 
 
 
-def calc_homophily(g, attribute = "behavior_status", recenter_flag = 0, qs = 1, is_category = 0):    # function called by the save_homophily function in Save_Functions.py
+def calc_homophily(g, attribute = "behavior_status", recenter_flag = 0, quantity_scaling = 1, is_category = 0):    # function called by the save_homophily function in Save_Functions.py
     #category is an integer misused as a boolean.
     #   It describes if homophily should be evaluated in terms of metric distance or categories
 
-    #qs is a scaling factor for the quantity
+    #quantity_scaling is a scaling factor for the quantity
 
     #flag describes if the homophily value should be recentered.
     #   When all nodes have the same value, no amount of rewiring can change the homophily.
@@ -42,35 +42,38 @@ def calc_homophily(g, attribute = "behavior_status", recenter_flag = 0, qs = 1, 
     #   If every node but one has the same value. With the odd one being isolate, this would be a higher homophily than was expected just based on the feature vector.
 
     A = np.array(g.get_adjacency().data)
-    B = np.array(g.vs[attribute])
+    if type(attribute) == np.ndarray:
+        B = attribute
+    else:
+        B = np.array(g.vs[attribute])
 
     hom_n_rc = [homophily_non_recentered,cat_homophily_non_recentered][is_category]
     rc_H = [recenter_H,cat_recenter_H][is_category]
 
-    H = hom_n_rc(B,A, qs = qs)
+    H = hom_n_rc(B,A, quantity_scaling = quantity_scaling)
     if(recenter_flag == 0):                              # when I call the function with flag = 0, I want to calculate the homophily and recenter it only if the flag is set to 1 in the graph.
         if(g["recenter_homophily_flag"] == 1):
-            H = H + rc_H(B,A, qs = qs)                      
+            H = H + rc_H(B,A, quantity_scaling = quantity_scaling)                      
     elif(recenter_flag == 1):                            # when I call the function with flag = 1, I want to calculate the homophily and recenter it.
-        H = H + rc_H(B,A, qs = qs)
+        H = H + rc_H(B,A, quantity_scaling = quantity_scaling)
     elif(recenter_flag == 2):                            # when I call the function with flag = 2, I want to calculate the homophily without recentering it.
         H = H    
     return H
 
-def homophily_non_recentered(B,A,qs=1):
+def homophily_non_recentered(B,A,quantity_scaling=1):
     #A is the adjacency matrix, B the vector of quantity of interest
-    #If the quantity is \element [0,0.2], qs should be 5
-    #if it is \element [3,7], qs should be 0.25
+    #If the quantity is \element [0,0.2], quantity_scaling should be 5
+    #if it is \element [3,7], quantity_scaling should be 0.25
 
     C = np.tile(B,(B.shape[0],1)).T
     #C is a matrix of the attribute, each row corresponds to one node
-    H = np.sum(np.sum(A.T*(0.5 - (qs*(C-B))**2),1))
+    H = np.sum(np.sum(A.T*(0.5 - (quantity_scaling*(C-B))**2),1))
     return 2*H/np.sum(A)
 
-def cat_homophily_non_recentered(B,A,qs = 1):
+def cat_homophily_non_recentered(B,A,quantity_scaling = 1):
     #calculating a categorical homophily, where all values have the same distance to each other
     #A is the adjacency matrix, B the vector of quantity of interest
-    #I don't need qs here, but I have it here to be interchangable with the other homophily function
+    #I don't need quantity_scaling here, but I have it here to be interchangable with the other homophily function
 
     C = np.tile(B,(B.shape[0],1)).T
     #C is a matrix of the attribute, each row corresponds to one node
@@ -78,14 +81,14 @@ def cat_homophily_non_recentered(B,A,qs = 1):
     
     return 2*H/np.sum(A)
 
-def recenter_H(B,A, qs = 1):
+def recenter_H(B,A, quantity_scaling = 1):
     L = len(B)
     A2 = np.ones([L,L])-np.diag(np.ones(L))    #adjacency matrix of complete graph
-    dummy_resc = homophily_non_recentered(B,A2, qs = qs)              # very good approximation of the rescaling factor. It's much faster than the exact calculation.
+    dummy_resc = homophily_non_recentered(B,A2, quantity_scaling = quantity_scaling)              # very good approximation of the rescaling factor. It's much faster than the exact calculation.
 
     return -dummy_resc
 
-def cat_recenter_H(B,A, qs = 1):
+def cat_recenter_H(B,A, quantity_scaling = 1):
     L = len(B)
     A2 = np.ones([L,L])-np.diag(np.ones(L))    #adjacency matrix of complete graph
     dummy_resc = cat_homophily_non_recentered(B,A2)              # very good approximation of the rescaling factor. It's much faster than the exact calculation.
