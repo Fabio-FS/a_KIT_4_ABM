@@ -163,10 +163,13 @@ def calc_mean(G,P_rec, global_var = None):
     return float(np.mean(G[P_rec["layer"]].vs[P_rec["attribute"]]))
 
 def calc_mean_subgroup(G,P_rec,global_var = None):
-    subgroup_idcs = np.where(    np.array(G[P_rec["layer"]].vs[P_rec["attribute_subgroup_1"]])    ==     P_rec["attribute_subgroup_1_value"])[0]
+    
     if P_rec.get("source",None) == "global_var":
+        subgroup_idcs = np.where(    np.array(getattr(global_var, P_rec["attribute_subgroup_1"]))    ==     P_rec["attribute_subgroup_1_value"])[0]
         with np.errstate(invalid="ignore"):
             return float(np.mean(getattr(global_var,P_rec["attribute"])[subgroup_idcs]))
+        
+    subgroup_idcs = np.where(    np.array(G[P_rec["layer"]].vs[P_rec["attribute_subgroup_1"]])    ==     P_rec["attribute_subgroup_1_value"])[0]
     with np.errstate(invalid="ignore"):
         return float(np.mean(G[P_rec["layer"]].vs[subgroup_idcs][P_rec["attribute"]] ))
 
@@ -223,15 +226,17 @@ def calc_frac_subgroup(G, P_rec, global_var = None):
     return float( np.mean(np.array(G[P_rec["layer"]].vs[subgroup_index][P_rec["attribute"]])   ==   P_rec["attribute_value"]) * subgroup_size  )
 
 def calc_homophily_wrapper(G,P_rec, global_var = None):
-    RES = float(calc_homophily(G[P_rec["layer"]], P_rec["attribute"], recenter_flag = P_rec["recenter_flag"], qs = P_rec["qs"], is_category = P_rec["is_category"]))
+    RES = float(calc_homophily(G[P_rec["layer"]], P_rec["attribute"], recenter_flag = P_rec["recenter_flag"], quantity_scaling = P_rec["quantity_scaling"], is_category = P_rec["is_category"]))
     return RES
 
 def calc_homophily_recentered_wrapper(G,P_rec, global_var = None):
-    RES = float(calc_homophily(G[P_rec["layer"]], P_rec["attribute"], recenter_flag = 1, qs = P_rec["qs"], is_category = P_rec["is_category"]))
+    if P_rec.get("source",None) == "global_var":
+        return calc_homophily(G[P_rec["layer"]], getattr(global_var,P_rec["attribute"]), recenter_flag= 1, quantity_scaling = P_rec["quantity_scaling"], is_category = P_rec["is_category"])
+    RES = float(calc_homophily(G[P_rec["layer"]], P_rec["attribute"], recenter_flag = 1, quantity_scaling = P_rec["quantity_scaling"], is_category = P_rec["is_category"]))
     return RES
 
 def calc_homophily_non_recentered_wrapper(G,P_rec, global_var = None):
-    RES = float(calc_homophily(G[P_rec["layer"]], P_rec["attribute"], recenter_flag = 2, qs = P_rec["qs"], is_category = P_rec["is_category"]))
+    RES = float(calc_homophily(G[P_rec["layer"]], P_rec["attribute"], recenter_flag = 2, quantity_scaling = P_rec["quantity_scaling"], is_category = P_rec["is_category"]))
     return RES
 
 
