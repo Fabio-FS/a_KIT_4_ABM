@@ -33,7 +33,7 @@ def init_SIRV(P_dyn, G, global_var):
     G[hl].vs["VA"]    = P_dyn["VA"]                                                             # for each node sets the availability of vaccines
     # for each node sets the initial condition
     set_disease_initial_condition(P_dyn["HEALTH"]["IC"], "health_status", G[hl])
-    set_initial_condition(P_dyn["BEHAVIOR"]["IC"], "behavior_status", G[bl])
+    set_initial_condition(P_dyn["BEHAVIOR"]["IC"], vertex_attribute="behavior_status", g=G[bl])
 
     if(P_dyn["BEHAVIOR"]["static"]):
         PB = np.array(G[bl].vs["behavior_status"])
