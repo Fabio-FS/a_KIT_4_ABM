@@ -153,8 +153,6 @@ def init_afc(P_dyn, G):
     #N_infected = np.sum(np.array(G[hl].vs["health_status"])==2)
     #print(N_infected)
 
-    #set_initial_condition(P_dyn["BEHAVIOR"]["IC"], "personal_beta", G[bl])
-    #set_initial_condition is not needed. Every agent starts with the same personal beta of beta0
     #I could include beta0 in the IC flag, but then I would have to write it twice. So i just do it here
     G[bl].vs["beta"] = np.full( shape=len(G[bl].vs), fill_value = P_dyn["HEALTH"]["beta0"])
     G[bl].vs["next_beta"] = np.full( shape=len(G[bl].vs), fill_value = P_dyn["HEALTH"]["beta0"])
