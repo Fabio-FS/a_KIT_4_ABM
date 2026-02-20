@@ -1,5 +1,5 @@
 import numpy as np
-from Hom_and_pol import calc_homophily, calc_polarization
+from Hom_and_pol import calc_homophily, calc_polarization, polarization
 from Write_functions import *
 
 #   ████    ██         ██      ████     ████    ██████    ████   
@@ -154,6 +154,8 @@ def pass_ALL(G,P_rec, global_var = None):
     return RES
 
 def pass_ALL_as_int(G,P_rec, global_var = None):
+    if P_rec.get("source",None) == "global_var":
+        return getattr(global_var,P_rec["attribute"]).astype(int)
     RES = np.array(G[P_rec["layer"]].vs[P_rec["attribute"]]).astype(int).tolist()
     return RES
 
@@ -182,16 +184,22 @@ def calc_median(G,P_rec, global_var = None):
     return RES
 
 def calc_var(G,P_rec, global_var = None):
+    if P_rec.get("source",None) == "global_var":
+        return float(np.var(getattr(global_var,P_rec["attribute"])))
     RES = float(np.var(G[P_rec["layer"]].vs[P_rec["attribute"]]))
     return RES
 
 # add other polarization measures: Esteban Ray, std of pairwise differences, etc.
 
 def calc_max(G,P_rec, global_var = None):
+    if P_rec.get("source",None) == "global_var":
+        return float(np.max(getattr(global_var,P_rec["attribute"])))
     RES = float(np.max(G[P_rec["layer"]].vs[P_rec["attribute"]]))
     return RES
 
 def calc_min(G,P_rec, global_var = None):
+    if P_rec.get("source",None) == "global_var":
+        return float(np.min(getattr(global_var,P_rec["attribute"])))
     RES = float(np.min(G[P_rec["layer"]].vs[P_rec["attribute"]]))
     return RES
 
@@ -253,6 +261,8 @@ def fr_local(g, attribute, value, global_var = None):
     return RES
 
 def calc_pol(G,P_rec, global_var = None):
+    if P_rec.get("source",None) == "global_var":
+        RES = polarization(global_var.get(P_rec["attribute"]))    
     RES = calc_polarization(G[P_rec["layer"]], P_rec["attribute"])
     return RES
 
