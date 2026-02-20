@@ -82,7 +82,7 @@ def update_beta(probability, N_infected, max_behavior, beta0, N_nodes):
     #                       dice throw          if there are infected  agents
     #agents will stop protecting if no one is infected
     #this is an assumption/approximation that doesn't change any interesting predictions but speeds up simulations dramatically
-    beta = ((1-max_behavior*behavior)*beta0)
+    beta = (1-max_behavior*behavior) * beta0
 
     return behavior, beta
 
@@ -193,8 +193,6 @@ def update_upw_dow(G,rule, global_var):
     #second: update the betas
 
     global_var.behavior, global_var.beta = update_beta(probability, N_infected, max_behavior, beta0, global_var.N_nodes_H)
-    g_b.vs["behavior"] = global_var.behavior.tolist()
-    g_b.vs["beta"] = global_var.beta.tolist()
 
     #------------------------------------------------------------------------------------------------------------------------------#
     #third: calculate and carry out update of health status
@@ -268,8 +266,6 @@ def update_upw_dow_SIS(G,rule, global_var):
     #second: update the betas
 
     global_var.behavior, global_var.beta = update_beta(probability, N_infected, max_behavior, beta0, global_var.N_nodes_H)
-    g_b.vs["behavior"] = global_var.behavior.tolist()
-    g_b.vs["beta"] = global_var.beta.tolist()
 
     #------------------------------------------------------------------------------------------------------------------------------#
     #third: calculate and carry out update of health status
@@ -333,7 +329,7 @@ def update_upw_dow_mov(G,rule, global_var):
     # check if there are infected nodes, if not the health update will be skipped
     N_infected = np.sum(health_status == 2)
     if N_infected == 0:
-        N_protecting = np.sum(np.array(g_b.vs["behavior"])==1)   #check if there are protecting nodes, if not, everything will be skipped
+        N_protecting = np.sum(np.array(behaviors == True))   #check if there are protecting nodes, if not, everything will be skipped
         if N_protecting == 0:
             global_var.stop_condition = True
             #no return here.
@@ -347,12 +343,10 @@ def update_upw_dow_mov(G,rule, global_var):
         #first: calculate update of health status
 
         global_var.health_status = update_health_SIR(N_infected, global_var)
-        g_h.vs["health_status"] = global_var.health_status.tolist()
-        #writing the health status to nodes, because I still use that when saving
 
         global_var.I_peak = max(global_var.I_peak  ,  float(np.mean(global_var.health_status==2)))
 
-    N_infected = np.sum(np.array(g_h.vs["health_status"])==2)
+    N_infected = np.sum(np.array(global_var.health_status==2))
     global_var.first_tick = False
     #------------------------------------------------------------------------------------------------------------------------------#
     #third: calculate update of protection probabilities
@@ -365,9 +359,8 @@ def update_upw_dow_mov(G,rule, global_var):
     #fourth: update the betas and awarenesses
 
     global_var.behavior, global_var.beta = update_beta(probability, N_infected, max_behavior, beta0, global_var.N_nodes_H)
-    g_b.vs["behavior"] = global_var.behavior.tolist()
-    g_b.vs["beta"] = global_var.beta.tolist()
 
+ 
 
 # ██  ██   ██████     ██     ██  ██    ████     ████     ████    ████     ██████  
 # ██  ██   ██        ████    ██  ██     ██     ██  ██     ██     ██ ██    ██      
@@ -407,9 +400,9 @@ def update_upward_Heav(G,rule, global_var):
     max_behavior = rule["max_behavior"]
 
     # check if there are infected nodes, if not the health update will be skipped
-    N_infected = np.sum(np.array(g_h.vs["health_status"])==2)
+    N_infected = np.sum(np.array(global_var.health_status))
     if N_infected == 0:
-        N_protecting = np.sum(np.array(g_b.vs["behavior"])==1)   #check if there are protecting nodes, if not, everything will be skipped
+        N_protecting = np.sum(np.array(global_var.behavior==1))   #check if there are protecting nodes, if not, everything will be skipped
         if N_protecting == 0:
             global_var.stop_condition = True
             #no return here.
@@ -419,7 +412,7 @@ def update_upward_Heav(G,rule, global_var):
     #first: calculate update of personal betas
 
     for i,vertex in enumerate(g_b.vs):
-        protecting_nghbrs = np.mean(np.array(g_b.vs[g_b.neighbors(i)]["behavior"])==1)      
+        protecting_nghbrs = np.mean(np.array(g_b.vs[g_b.neighbors(i)]["behavior"])==1)
         vertex["probability"] = np.heaviside(mu*protecting_nghbrs + (1 - mu)*vertex["behavior"] + nifactor*N_infected/g_h.vcount() - thr,1)
     #------------------------------------------------------------------------------------------------------------------------------#
     #second: update the betas and awarenesses
@@ -543,6 +536,7 @@ def update_downward_Heav(G,rule, global_var):
 def init_mix_3_populations(P_dyn, G, global_var):
 
     global_var.first_tick = True
+    global_var.P_dyn = P_dyn
 
     hl = P_dyn["HEALTH"]["layer"]       # layer where the the health status is imprinted
     bl = P_dyn["BEHAVIOR"]["layer"]     # layer where the behavior is imprinted
@@ -567,10 +561,12 @@ def init_mix_3_populations(P_dyn, G, global_var):
     G[bl].vs["next_beta"] = np.full( shape=len(G[bl].vs), fill_value = P_dyn["HEALTH"]["beta0"])
     global_var.I_peak = 0
 
+    #calculating the size of each fraction in the population
     share_herders = P_dyn["BEHAVIOR"]["IC"].get("share_herders",0)
     share_contrarians = P_dyn["BEHAVIOR"]["IC"].get("share_contrarians",0)
     share_static = P_dyn["BEHAVIOR"]["IC"].get("share_static",0)
 
+    #also filling up to 1, if possible
     if abs(share_contrarians + share_herders + share_static - 1) > 1e-6:
         fixable = False
 
@@ -604,77 +600,28 @@ def init_mix_3_populations(P_dyn, G, global_var):
             contrarian_idcs = np.random.choice(remaining_idcs,size=min(len(remaining_idcs),int(round(share_contrarians*G[bl].vcount()))),replace=False)
         remaining_idcs = np.setdiff1d(remaining_idcs, contrarian_idcs)
     else:
-        contrarian_idcs = np.array([])
+        contrarian_idcs = np.array([],dtype=bool)
 
     #setting up the attribute that the Metropolis algorithm will distribute
-    G[bl].vs[herder_idcs]["IRF_group"] = 0
-    G[bl].vs[contrarian_idcs]["IRF_group"] = 1
-    G[bl].vs[remaining_idcs]["IRF_group"] = 2
+    global_var.IRF_group = np.zeros(shape=G[bl].vcount())
+    global_var.IRF_group[contrarian_idcs] = 1
+    global_var.IRF_group[remaining_idcs] = 2
 
-    #if homophily flag is True and the population is not homogeneous, REdistribute the attribute "IRF_group"
+    #if homophily flag is True and the population is not homogeneous, RE-distribute the attribute "IRF_group"
     if P_dyn["BEHAVIOR"]["IC"]["homophily"]["Flag"] == True and share_herders != 1 and share_contrarians != 1 and share_static != 1:  #not doing calculations in homogeneous populations
-        set_initial_condition(P_dyn["BEHAVIOR"]["IC"], 
-                                         attribute = "IRF_group",
-                                         g = G[bl], 
-                                         vector_from_init_fct = np.int32(np.array(G[bl].vs["IRF_group"])),
-                                         global_var = global_var)
+        set_initial_condition(P_dyn["BEHAVIOR"]["IC"],
+                              attribute_vector = global_var.IRF_group,
+                              g = G[bl],
+                              global_var = global_var)
     
     #after potentially homophilously distriubting the attribute, write the indices to global_var
-    global_var.herder_idcs = np.where(np.array(G[bl].vs["IRF_group"]) == 0)[0]
-    global_var.contrarian_idcs = np.where(np.array(G[bl].vs["IRF_group"]) == 1)[0]
-    global_var.remaining_idcs = np.where(np.array(G[bl].vs["IRF_group"]) == 2)[0]
+    global_var.herder_idcs = np.where(global_var.IRF_group == 0)[0]
+    global_var.contrarian_idcs = np.where(global_var.IRF_group == 1)[0]
+    global_var.remaining_idcs = np.where(global_var.IRF_group == 2)[0]
         
     global_var.static_probability = P_dyn["BEHAVIOR"]["static_probability"]
-    for vertex in G[bl].vs:
-        if vertex["IRF_group"] == 2:
-            vertex["probability"] = P_dyn["BEHAVIOR"]["static_probability"]
-    #print(G[bl].vs["probability"])
+    global_var.probability = np.where(global_var.IRF_group == 2, global_var.static_probability, 0)
     global_var.behavior = np.array(G[bl].vs["behavior"])
-
-    if P_dyn["BEHAVIOR"]["IC"].get("equilibrium_flag",False):
-        g_b = G[bl]
-        a_B = P_dyn["BEHAVIOR"]["a_B"]
-        mu = P_dyn["BEHAVIOR"]["mu"]
-        BG_thr = P_dyn["BEHAVIOR"].get("BG_thr",P_dyn["BEHAVIOR"]["pn_thr"])
-        N_infected = P_dyn["HEALTH"]["IC"]["N_pat_zero"]
-        g_h = G[hl]
-        Bi_thr = P_dyn["BEHAVIOR"]["Bi_thr"]
-        a_Ni = P_dyn["BEHAVIOR"]["a_Ni"]
-        Ni_thr = P_dyn["BEHAVIOR"]["Ni_thr"]
-        equil_steps = P_dyn["BEHAVIOR"]["IC"].get("equil_steps",10)
-
-        for eq_step in range(equil_steps):
-            #------------------------------------------------------------------------------------------------------------------------------#
-            #first: calculate update of personal betas
-
-            all_b_neighbors = global_var.b_neighbors
-
-            protecting_nghbrs = np.array([np.mean(global_var.behavior[i]) for i in all_b_neighbors])
-
-            exponent = np.zeros(g_b.vcount())
-
-            exponent_upw = (- a_B * mu     * (protecting_nghbrs       - BG_thr)
-                            - a_B * (1-mu) * (global_var.behavior      - Bi_thr) 
-                            - a_Ni*           (N_infected/g_h.vcount() - Ni_thr))
-    
-            exponent_dow = (+ a_B * mu     * (protecting_nghbrs       - BG_thr)
-                            - a_B * (1-mu) * (global_var.behavior      - Bi_thr)
-                            - a_Ni*           (N_infected/g_h.vcount() - Ni_thr))
-    
-            exponent[global_var.herder_idcs] = exponent_upw[global_var.herder_idcs]
-            exponent[global_var.contrarian_idcs] = exponent_dow[global_var.contrarian_idcs]
-            #implicitly having the exponent for the remaining indices =0
-            #I overwrite the result of this exponent two lines beneath in the probability vector
-
-            probability = 1 / (1 + np.exp( exponent ) )
-            probability[global_var.remaining_idcs] = global_var.static_probability
-            #------------------------------------------------------------------------------------------------------------------------------#
-            #second: update the betas
-            rr1 = np.random.uniform(low=0, high=1, size=g_b.vcount())
-    
-            global_var.behavior = ( (probability > rr1) * (N_infected > 0) )
-    G[bl].vs["behavior"] = global_var.behavior.tolist()   
-    
 
     rule  = {
         'func': P_dyn["func"],
@@ -689,6 +636,17 @@ def init_mix_3_populations(P_dyn, G, global_var):
         'Ni_thr' : P_dyn["BEHAVIOR"]["Ni_thr"],
         'max_behavior' :  P_dyn["BEHAVIOR"]["max_behavior"]
         }
+
+    if P_dyn["BEHAVIOR"]["IC"].get("equilibrium_flag",False):
+        equil_steps = P_dyn["BEHAVIOR"]["IC"].get("equil_steps",10)
+
+        for eq_step in range(equil_steps):
+            update_upw_dow_health_fixed(G,rule,global_var)
+            
+    G[bl].vs["behavior"] = global_var.behavior.tolist()  
+    global_var.beta_override =  ((1-P_dyn["BEHAVIOR"]["max_behavior"]*global_var.behavior)*P_dyn["HEALTH"]["beta0"])
+    global_var.actual_health_behavior = global_var.behavior
+
     return rule
 
 
@@ -720,8 +678,8 @@ def init_upw_dow(P_dyn, G,global_var):
     set_disease_initial_condition(P_dyn["HEALTH"]["IC"], "health_status", G[hl])
     G[hl].vs["next_health"] = G[hl].vs["health_status"]
     global_var.health_status = np.array(G[hl].vs["health_status"])
-    G[bl].vs["beta"] = [P_dyn["HEALTH"]["beta0"]]*len(G[bl].vs) #  list(np.full( shape=len(G[bl].vs), fill_value = beta0))
-    G[bl].vs["behavior"] = np.full( shape=len(G[bl].vs), fill_value = 0).tolist()
+    global_var.beta = [P_dyn["HEALTH"]["beta0"]]*len(G[bl].vs) #  list(np.full( shape=len(G[bl].vs), fill_value = beta0))
+    global_var.behavior = np.full( shape=len(G[bl].vs), fill_value = 0).tolist()
     G[bl].vs["next_beta"] = np.full( shape=len(G[bl].vs), fill_value = P_dyn["HEALTH"]["beta0"])
     global_var.I_peak = 0
 
@@ -729,6 +687,7 @@ def init_upw_dow(P_dyn, G,global_var):
         global_var.herder_idcs = range(global_var.N_nodes_B)
         global_var.contrarian_idcs = []
         global_var.remaining_idcs = []
+        global_var.IRF_group = np.zeros(shape = G[bl].vcount())
 
         G[bl].vs["herder"] = True
     else:
@@ -736,6 +695,8 @@ def init_upw_dow(P_dyn, G,global_var):
         global_var.herder_idcs = []
         global_var.contrarian_idcs = range(global_var.N_nodes_B)
         global_var.remaining_idcs = []
+        global_var.IRF_group = np.ones(shape = G[bl].vcount())
+        
     G[bl].vs[global_var.herder_idcs]["IRF_group"] = 0
     G[bl].vs[global_var.contrarian_idcs]["IRF_group"] = 1
     G[bl].vs[global_var.remaining_idcs]["IRF_group"] = 2
@@ -756,7 +717,7 @@ def init_upw_dow(P_dyn, G,global_var):
         beta0 = P_dyn["HEALTH"]["beta0"]
         equil_steps = P_dyn["BEHAVIOR"]["IC"].get("equil_steps",10)
 
-        behavior = np.array(g_b.vs["behavior"])
+        behavior = np.array(global_var.behavior)
 
         for eq_step in range(equil_steps):
 
@@ -765,9 +726,9 @@ def init_upw_dow(P_dyn, G,global_var):
                                                       theta = Ni_thr, Bi_thr = Bi_thr, BG_thr = BG_thr)
             behavior, beta = update_beta(probability, N_infected, max_behavior, beta0, g_b.vcount())
 
-        g_b.vs["behavior"] = behavior.astype(int).tolist()
-        g_b.vs["beta"] = beta.tolist()
-    global_var.behavior = np.array(G[bl].vs["behavior"])
+        global_var.behavior = behavior
+        global_var.beta = beta
+    global_var.beta_override = beta
 
     if "UPW" in P_dyn["func"]:
         IRF_direction = "UPW"
