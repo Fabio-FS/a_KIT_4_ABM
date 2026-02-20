@@ -42,6 +42,7 @@ def reset_param(P_net_original,P_sim_original,P_dyn_original,P_rec_original):
     return P_net, P_sim, P_dyn, P_rec
 
 def run_sim(P_network, P_dynamic, P_simulations, P_record, return_G = False):
+    #initialize the graph, read in all simulation rules, simulate and return data
 
     # initialize the graph creating all the needed layers. for each layer create the network
     Graphs = init_graph(P_network) # G is a list of graphs.
@@ -88,7 +89,7 @@ def init_graph(P_net):
         elif(P_layer["type"] == "Lattice"):
             if(P_layer["Lx"]*P_layer["Ly"] != N):
                 print("GRAPH SIZE WARNING: Lx*Ly != N: " + str(P_layer["Lx"]*P_layer["Ly"]) + " != " + str(N)) 
-            g = ig.Graph.Lattice(dim=[P_layer["Lx"], P_layer["Ly"]], circular=P_layer.get("circular",False), nei = P_layer["nei"])
+            g = ig.Graph.Lattice(dim=[P_layer["Lx"], P_layer["Ly"]], circular=P_layer.get("circular",False), nei = P_layer.get("nei",1))
         elif(P_layer["type"] == "Moore_Lattice"):
             #a lattice with Moore neighborhood, i.e. 8 neighbors
             #a Cellular automaton
@@ -121,7 +122,6 @@ def init_graph(P_net):
                     elif i==N-1:    #last row
                         A[i,-4:] = np.array([1,1,1,0])
                     elif i%2 == 0:                             #every second row
-                        print(i,2*(i//2)-2)
                         A[i,2*(i//2)-2:2*(i//2)-2+6] = np.array([1,1,0,1,1,1])
                     else:                                      #every other second row
                         A[i,2*(i//2)-2:2*(i//2)-2+6] = np.array([1,1,1,0,1,1])
@@ -295,6 +295,8 @@ def init_rules(G,P_dyn,global_var):
     return LotR # list of rules
 
 def simulate_and_return_data(Graphs, list_of_rules, P_simulations, P_record,global_var, P_network = {}):
+    #with graph and rules initialized, simulate and return data
+
     # G is the list of graph-layers, each item is one graph
     # list_of_rules is a list of dictionaries, each containing parameters for one updating function
     # P_record is the dictionary with the parameters for recording
