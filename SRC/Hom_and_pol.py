@@ -12,10 +12,15 @@ import pathlib
 import warnings
 from scipy.stats import beta
 
-# This is a Metropolis algorithm, each proposed move switches the behavior of two nodes.
-# CERCA tra gli appunti di DI RENZO le note sugli algoritmi per ISING
-
-
+#                                                                                                             
+#  █████     ████    ██         ██     █████     ████    ██████     ██     ██████    ████     ████    ██  ██  
+#  ██  ██   ██  ██   ██        ████    ██  ██     ██         ██    ████      ██       ██     ██  ██   ███ ██  
+#  ██  ██  ██    ██  ██       ██  ██   ██  ██     ██        ██    ██  ██     ██       ██    ██    ██  ██████  
+#  █████   ██    ██  ██       ██████   █████      ██       ██     ██████     ██       ██    ██    ██  ██████  
+#  ██      ██    ██  ██       ██  ██   ████       ██      ██      ██  ██     ██       ██    ██    ██  ██ ███  
+#  ██       ██  ██   ██       ██  ██   ██ ██      ██     ██       ██  ██     ██       ██     ██  ██   ██  ██  
+#  ██        ████    ██████   ██  ██   ██  ██    ████    ██████   ██  ██     ██      ████     ████    ██  ██  
+#
 
 def calc_polarization(g, attribute = "behavior_status"):
     B = np.array(g.vs[attribute])
@@ -28,9 +33,17 @@ def polarization(B):
         pol = pol + np.sum(A2[i,:].dot(np.power(B[i]-B,2)))
     return pol/np.sum(A2)
 
+#                                                                                  
+#  ██  ██    ████    ██   ██   ████    █████    ██  ██    ████    ██       ██  ██  
+#  ██  ██   ██  ██   ███ ███  ██  ██   ██  ██   ██  ██     ██     ██       ██  ██  
+#  ██  ██  ██    ██  ███████ ██    ██  ██  ██   ██  ██     ██     ██       ██  ██  
+#  ██████  ██    ██  ██ █ ██ ██    ██  █████    ██████     ██     ██        ████   
+#  ██  ██  ██    ██  ██   ██ ██    ██  ██       ██  ██     ██     ██         ██    
+#  ██  ██   ██  ██   ██   ██  ██  ██   ██       ██  ██     ██     ██         ██    
+#  ██  ██    ████    ██   ██   ████    ██       ██  ██    ████    ██████     ██    
+#     
 
-
-def calc_homophily(g, attribute = "behavior_status", recenter_flag = 0, quantity_scaling = 1, is_category = 0):    # function called by the save_homophily function in Save_Functions.py
+def calc_homophily(g, attribute = "behavior_status", recenter_flag = False, quantity_scaling = 1, is_category = 0):    # function called by the save_homophily function in Save_Functions.py
     #category is an integer misused as a boolean.
     #   It describes if homophily should be evaluated in terms of metric distance or categories
 
@@ -50,13 +63,10 @@ def calc_homophily(g, attribute = "behavior_status", recenter_flag = 0, quantity
     hom_n_rc = [homophily_non_recentered,cat_homophily_non_recentered][is_category]
     rc_H = [recenter_H,cat_recenter_H][is_category]
 
-    H = hom_n_rc(B,A, quantity_scaling = quantity_scaling)
-    if(recenter_flag == 0):                              # when I call the function with flag = 0, I want to calculate the homophily and recenter it only if the flag is set to 1 in the graph.
-        if(g["recenter_homophily_flag"] == 1):
-            H = H + rc_H(B,A, quantity_scaling = quantity_scaling)                      
-    elif(recenter_flag == 1):                            # when I call the function with flag = 1, I want to calculate the homophily and recenter it.
+    H = hom_n_rc(B,A, quantity_scaling = quantity_scaling)                    
+    if recenter_flag == True :                            # when I call the function with flag = 1, I want to calculate the homophily and recenter it.
         H = H + rc_H(B,A, quantity_scaling = quantity_scaling)
-    elif(recenter_flag == 2):                            # when I call the function with flag = 2, I want to calculate the homophily without recentering it.
+    else:                            # when I call the function with flag = 2, I want to calculate the homophily without recentering it.
         H = H    
     return H
 
@@ -66,8 +76,11 @@ def homophily_non_recentered(B,A,quantity_scaling=1):
     #if it is \element [3,7], quantity_scaling should be 0.25
 
     C = np.tile(B,(B.shape[0],1)).T
-    #C is a matrix of the attribute, each row corresponds to one node
-    H = np.sum(np.sum(A.T*(0.5 - (quantity_scaling*(C-B))**2),1))
+    #C is a tiling of the attribute vector, but  transposed
+    # ex: B = [0,1,2] -> C = [[0 0 0] [1 1 1] [2 2 2]]
+    
+    H = np.sum(  A * (0.5 - (quantity_scaling*(C-B))**2)   )
+
     return 2*H/np.sum(A)
 
 def cat_homophily_non_recentered(B,A,quantity_scaling = 1):
@@ -76,8 +89,15 @@ def cat_homophily_non_recentered(B,A,quantity_scaling = 1):
     #I don't need quantity_scaling here, but I have it here to be interchangable with the other homophily function
 
     C = np.tile(B,(B.shape[0],1)).T
-    #C is a matrix of the attribute, each row corresponds to one node
-    H = np.sum(np.sum(A.T*(0.5 - (1-(C==B))**2),1))
+    #C is a tiling of the attribute vector, but  transposed
+    # ex: B = [0,1,2] -> C = [[0 0 0] [1 1 1] [2 2 2]]
+
+    H = np.sum( A * ((C==B) - 1/2) )
+    #(C==B)  is a matrix with a 1 at index i,j  if  Bi == Bj;  otherwise all zeros
+    #from that matrix, you subtract half.  so now C_ij = 0.5 if Bi == Bj;   otherwise -0.5
+    #multiply with the adjacency matrix to filter out only connected nodes:    A* ((C==B) - 1/2)
+    #and sum all values
+    #each connection of same agents adds 1/2, each connection of different agents subtracts 1/2
     
     return 2*H/np.sum(A)
 
@@ -91,40 +111,124 @@ def recenter_H(B,A, quantity_scaling = 1):
 def cat_recenter_H(B,A, quantity_scaling = 1):
     L = len(B)
     A2 = np.ones([L,L])-np.diag(np.ones(L))    #adjacency matrix of complete graph
-    dummy_resc = cat_homophily_non_recentered(B,A2)              # very good approximation of the rescaling factor. It's much faster than the exact calculation.
+    recenter_value = cat_homophily_non_recentered(B,A2)              # very good approximation of the recenter value. It's much faster than the exact calculation.
 
-    return -dummy_resc
-
-
+    return -recenter_value
 
 
-def metropolis(g, attribute =  "behavior_status",
-               hom_target = 0, recenter = False,
-               N_steps = 10, tolerance = 1e-4,
-               return_H_hist = False, dbg = False,
-               is_category = 0, temperature = 0.01,
+
+def calculate_homophily_difference(k,l,B,A):
+
+    #calculate difference in homophily if two nodes   k and l   were switched.
+    #B: the attribute vector before the switch
+    #A: the adjacency matrix
+
+    if A[k,l] == 0:
+        #not neighbors - very likely in sparsely connected graphs
+        #then there is no need to make copies
+        dh = ( A[:,k].dot( (B-B[l])**2 - (B-B[k])**2 ) +
+               A[:,l].dot( (B-B[k])**2 - (B-B[l])**2 )  )
+        return 2*dh
+    
+    #if the two nodes are neighbors, the change in homophily needs to be calculated differently.
+    #then the above formula overestimates homophily because one of k's neighbors IS l.
+    #but I'm calculating how similar l would be to k's neighbors, one of which is l themselves
+    #that's why in this case, I just copy the whole vector and make the switch.
+
+    B2 = B.copy()
+    B2[k], B2[l] = B2[l], B2[k]
+
+    dh = ( A[:,k].dot( (B2-B2[k])**2 - (B-B[k])**2 ) +
+           A[:,l].dot( (B2-B2[l])**2 - (B-B[l])**2 )  )
+
+    return 2*dh
+
+def cat_calculate_homophily_difference(k,l,B,A):
+
+    #calculate difference in homophily if two nodes   k and l   were switched.
+    #B: the attribute vector before the switch;
+    #   the values of B are categories, not continuous
+    #A: the adjacency matrix
+
+    if B[k] == B[l]:
+        return 0
+    
+    if A[k,l] == 0:
+        #not neighbors - very likely in sparsely connected graphs
+        #then there is no need to make copies
+        dh = ( A[:,k].dot( (B==B[l]).astype(int) - (B == B[k])) + 
+               A[:,l].dot( (B==B[k]).astype(int) - (B == B[l]))    )
+        return 2*dh
+
+    #if the two nodes are neighbors, the change in homophily needs to be calculated differently.
+    #then the above formula overestimates homophily because one of k's neighbors IS l.
+    #but I'm calculating how similar l would be to k's neighbors, one of which is l themselves
+    #that's why in this case, I just copy the whole vector and make the switch.
+    
+    B2 = B.copy()
+    B2[k], B2[l] = B2[l], B2[k]
+
+    dh = ( A[:,k].dot( (B2==B[l]).astype(int) - (B == B[k])) + 
+           A[:,l].dot( (B2==B[k]).astype(int) - (B == B[l]))    )
+
+    return 2*dh
+
+#                                                                                           
+#  ██   ██  ██████   ██████   █████     ████    █████     ████    ██        ████     ████   
+#  ███ ███  ██         ██     ██  ██   ██  ██   ██  ██   ██  ██   ██         ██     ██  ██  
+#  ███████  ██         ██     ██  ██  ██    ██  ██  ██  ██    ██  ██         ██     ██      
+#  ██ █ ██  ████       ██     █████   ██    ██  █████   ██    ██  ██         ██      ████   
+#  ██   ██  ██         ██     ████    ██    ██  ██      ██    ██  ██         ██         ██  
+#  ██   ██  ██         ██     ██ ██    ██  ██   ██       ██  ██   ██         ██     ██  ██  
+#  ██   ██  ██████     ██     ██  ██    ████    ██        ████    ██████    ████     ████   
+#
+
+def metropolis(g, attribute_vector,
+               hom_target = 0, tolerance = 1e-4,
+               recenter = False,
+               N_steps = 10,
+               is_category = 0, temperature = 0.01,  quantity_scaling = 1,              
+               return_H_hist = False, dbg = False,               
                global_var = None
                ):
-    #N_steps: the maximum number of switching steps
+    # This is a Metropolis algorithm, each proposed move switches the behavior of two nodes.
+    #
+    # from the graph    g   , we calculate the adjacency matrix A   [shape (N,N)]
+    #    attribute     is the vector, that should be redistributed amongst the nodes [shape N]
+    #
+    #all other values are optional.
+    #hom_target:   the target value for homophily
+    #tolerance:   how close we need to get to the target - break condition
+    #recenter:   factor in expected homophiily given the attribute_vector
+    #N_steps:   the maximum number of switching steps
+    #is_category:    0 or 1. when True, two different values always have a distance of 1
+    #temperature:    how noisy is the acceptance of proposed switches
+    #quantity_scaling:   scales the vector. Differences between two values should be never higher than 1.
+    #return_H_hist:    whether to write all homophily values to a csv
+    #dbg:    whether to return the whole history of attribute_vectors
+    #global_var:    I drag this through the whole process to keep track of stuff
+
+
     # initialize the history of all the behaviors, this IS VERY MEMORY INTENSIVE. for each time-step of the metropolis algorithm, we store the behavior of all the nodes.
     if(dbg):
-        hist_B = np.zeros([N_steps,len(g.vs)])
+        hist_B = np.zeros([N_steps+1,len(g.vs)])
     
-    Hs, B, A, L, m2 = initialize(g, attribute, N_steps)  # history of homophily, vector of behaviors, adjacency matrix, number of nodes, 2/sum(A)
+    Hs = np.ones(N_steps+1)      # history of homophily
+    
+    B = attribute
+    A = np.array(g.get_adjacency().data)  #adjacency matrix
+    edge_weight = 2/np.sum(A)
+
     count = 0
-    k12 = np.random.choice(np.arange(L), [N_steps,2])
+    random_indcs = np.random.choice(np.arange(g.vcount()), [N_steps,2])
 
     hom_n_rc = [homophily_non_recentered,cat_homophily_non_recentered][is_category]
     rc_H = [recenter_H,cat_recenter_H][is_category]
-    Hs[0] = hom_n_rc(B,A)
+    calc_dh = [calculate_homophily_difference, cat_calculate_homophily_difference][is_category]
+    Hs[0] = hom_n_rc(B,A, quantity_scaling = quantity_scaling)
 
-    if (recenter):
-        Hs[0] = Hs[0] + rc_H(B,A)
-        g["recenter_homophily_flag"] = 1         # I add a flag to the graph to remember that I recentered the homophily. It's quite ugly, but it's the only way I found to keep track of it.
-                                                        # it is needed in the calc_homophily function.
-        
-    else:
-        g["recenter_homophily_flag"] = 0
+    if recenter:
+        Hs[0] += rc_H(B,A, quantity_scaling = quantity_scaling)
 
     break_count = N_steps
 
@@ -132,9 +236,8 @@ def metropolis(g, attribute =  "behavior_status",
         if(tolerance < np.abs(Hs[count]-hom_target)):
             #if tolerance isn't yet reached
 
-            i, j = k12[count,0], k12[count,1]
-            B2 = B.copy()
-            dh = -calc_dh(i,j,B2,A)*m2
+            i, j = random_indcs[count,0], random_indcs[count,1]
+            dh = calc_dh(i,j,B,A)*edge_weight
 
             h_attempt = Hs[count]+dh
 
@@ -165,7 +268,6 @@ def metropolis(g, attribute =  "behavior_status",
 
     if not global_var is None:
         setattr(global_var,"metropolis_steps",break_count)
-    g.vs[attribute] = B
     
 
     if (not return_H_hist):
@@ -184,28 +286,5 @@ def metropolis(g, attribute =  "behavior_status",
 
     setattr(global_var,"homophily_recentered",float(Hs[-1]))   if recenter    else     setattr(global_var,"homophily",float(Hs[-1]))
 
-
-    return results
+    return B, results
     
-
-
-def initialize(g, name, N_steps):
-    Hs = np.ones(N_steps+1)      # history of homophily
-    B = np.array(g.vs[name])
-    A = np.array(g.get_adjacency().data)
-    L = len(B)
-    m2 = 2/np.sum(A)
-    return Hs, B, A, L, m2
-    
-
-def calc_dh(k,l,B,A):
-    #switch two nodes k and l. calculate difference in homophily
-
-    B2 = B.copy()
-    B2[k], B2[l] = B2[l], B2[k]
-
-    dh = A[:,k].dot(
-        np.power(B2-B2[k],2)-np.power(B-B[k],2)) + A[:,l].dot(
-        np.power(B2-B2[l],2)-np.power(B-B[l],2))
-
-    return dh*2
