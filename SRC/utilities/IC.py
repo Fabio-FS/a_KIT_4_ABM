@@ -32,49 +32,53 @@ def set_disease_initial_condition(IC, attribute, g):
 
 
 
-def set_initial_condition(IC, attribute, g, vector_from_init_fct = None, global_var = None):
+def set_initial_condition(P_IC, g, attribute_vector = None, vertex_attribute = None, global_var = None):
     # implementation of the initial conditions.
     # distributes an attribute on the network, as specified in IC
+    # attribute is changed in place, but also returned
 
-    if not vector_from_init_fct is None:
-        #makes it possible to specify a vector e.g. in the init_function
-        g.vs[attribute] = vector_from_init_fct
-    elif(IC["distribution"] == "random_uniform"):
-        #25-04-07: in older parameter files, "distribution" might still be "type"
-        g.vs[attribute]=np.random.uniform(IC["Low"],IC["High"],len(g.vs))
-    elif(IC["distribution"] == "random_beta"):
+    if not attribute_vector is None:
+        pass
+    elif not vertex_attribute is None:
+        attribute_vector = g.vs["vertex_attribute"]
+    elif(P_IC["distribution"] == "random_uniform"):
+        attribute_vector = np.random.uniform(P_IC["Low"],P_IC["High"],g.vcount())
+    elif(P_IC["distribution"] == "random_beta"):
         # if alpha is not defined, sets it to be equal to beta, and viceversa
-        if("alpha" not in IC):
-            a, b = IC["beta"], IC["beta"]
-        elif("beta" not in IC):
-            a, b = IC["alpha"], IC["alpha"]
+        if("alpha" not in P_IC):
+            a, b = P_IC["beta"], P_IC["beta"]
+        elif("beta" not in P_IC):
+            a, b = P_IC["alpha"], P_IC["alpha"]
         else:
-            a, b = IC["alpha"], IC["beta"]
+            a, b = P_IC["alpha"], P_IC["beta"]
 
-        VECTOR_INIT = np.random.beta(a,b,len(g.vs))
-        g.vs[attribute]= VECTOR_INIT
-    elif(IC["distribution"] == "vector"):
-        g.vs[attribute] = IC["values"]
+        attribute_vector = np.random.beta(a,b,g.vcount())
+    elif(P_IC["distribution"] == "vector"):
+        attribute_vector = np.array(P_IC["values"])
     else:
-        print(f"initialization type {IC["type"]} not implemented yet")
+        print(f"neither vector provided, nor initialization type {P_IC.get("distribution","([unspecified])")} known")
         
-    if(IC["homophily"]["Flag"] == True):
+    if(P_IC["homophily"]["Flag"] == True):
         # case 1 debug = False, return_H_hist = False
-        dbg = IC["homophily"]["debug"]
-        return_H_hist = IC["homophily"]["return_H_hist"]
+        dbg = P_IC["homophily"]["debug"]
+        return_H_hist = P_IC["homophily"]["return_H_hist"]
 
-        results = metropolis(   g, 
-                                attribute =  attribute,
-                                temperature = IC["homophily"].get("temperature",0),
-                                tolerance = IC["homophily"].get("tolerance",1e-4),
-                                hom_target = IC["homophily"]["hom_target"], 
-                                N_steps = IC["homophily"]["steps"],
+        attribute_vector, results = metropolis(   g, 
+                                attribute_vector =  attribute_vector,
+                                temperature = P_IC["homophily"].get("temperature",0),
+                                tolerance = P_IC["homophily"].get("tolerance",1e-4),
+                                hom_target = P_IC["homophily"]["hom_target"], 
+                                N_steps = P_IC["homophily"]["steps"],
                                 return_H_hist = return_H_hist,
                                 dbg = dbg,
-                                recenter = IC["homophily"]["recenter"],
-                                is_category = IC["homophily"]["is_category"],
+                                recenter = P_IC["homophily"]["recenter"],
+                                is_category = P_IC["homophily"]["is_category"],
+                                quantity_scaling = P_IC["homophily"].get("quantity_scaling",1),
                                 global_var = global_var)
         save_metropolis_data(results, g, dbg, return_H_hist)
+    return attribute_vector
+        
+        
 
 
 
