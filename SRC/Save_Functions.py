@@ -211,6 +211,31 @@ def calc_frac(G,P_rec, global_var = None):
     #return RES
 
 def calc_frac_subgroup(G, P_rec, global_var = None):
+    
+    if P_rec.get("source",None) == "global_var":
+        all_conditions_applied = False
+        subgroup_index = np.arange(G[P_rec["layer"]].vcount())
+
+        next_condition_idx = 1
+
+        while not all_conditions_applied:
+            try:
+                indcs_next_condition = np.where( getattr(global_var, P_rec[f"attribute_subgroup_{next_condition_idx}"]) == P_rec[f"attribute_subgroup_{next_condition_idx}_value"] )[0]
+                subgroup_index = np.intersect1d(subgroup_index, indcs_next_condition )
+                next_condition_idx += 1              
+            except:
+                all_conditions_applied = True
+
+        if len(subgroup_index) == 0:
+            return 0
+        
+        subgroup_size = len(subgroup_index)/G[P_rec["layer"]].vcount()
+
+        return float( np.mean ( getattr( global_var, P_rec["attribute"])[subgroup_index] ==  P_rec["attribute_value"])  * subgroup_size  )
+    #                           |----------- vector of attribute ------|                 ==  |value we're looking for|
+    #                                                                    [subgroup]
+    #                 |------- count for how many nodes of the subgroup the value is the one we're looking for ------|  | times groupsize|
+
 
     not_all_conditions_applied = True
     subgroup_index = np.array(list(range(G[P_rec["layer"]].vcount())))
