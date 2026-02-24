@@ -215,7 +215,7 @@ def metropolis(g, attribute_vector,
     
     Hs = np.ones(N_steps+1)      # history of homophily
     
-    B = attribute
+    B = attribute_vector
     A = np.array(g.get_adjacency().data)  #adjacency matrix
     edge_weight = 2/np.sum(A)
 
