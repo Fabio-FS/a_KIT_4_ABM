@@ -36,43 +36,30 @@ class SingleVariable_Results:
 def init_recording(P_record, T_max, P_network = {}):
 
     # initialize the recordings
-    L_REC_0 = []                        # what to record this at the BEGINNING of the simulation
-    L_REC   = []                        # what to record this DURING the simulation
-    L_REC_1 = []                        # what to record at the END of the simulation
-    #where all results will be saved:
-    results = Results()
+    L_REC_0 = []                        # what to record    at the BEGINNING    of the simulation
+    L_REC   = []                        # what to record         DURING            the simulation
+    L_REC_1 = []                        # what to record       at the END       of the simulation
 
     for i in range(P_record["N"]):
         # for each recording i, read the parameters and initialize the recording
         P_rec_i = P_record["Recording_" + str(i)]
+
         # for each of recording, I calculate how often it appears:
         P_rec_i["total_count"] = 0
-
-        if "BEGIN" not in P_rec_i:
-            # if BEGIN is not specified, set it to False
-            P_rec_i["BEGIN"] = False
-        if "END" not in P_rec_i:
-            # if END is not specified, set it to False
-            P_rec_i["END"] = False
-        if "DT" not in P_rec_i:
-            # if DT is not specified, set it to 0
-            P_rec_i["DT"] = 0
-            # I add to count the number of times 1:DT:T_max is divisible by DT
-
+        #and what timestamps will be recorded
         time_vector_i = []
-        if(P_rec_i["END"] == True):
+        if P_rec_i.get("END"):
             L_REC_1.append(P_rec_i)
             P_rec_i["total_count"] += 1
             time_vector_i.append(-1)
-        if(P_rec_i["BEGIN"] == True):
+        if P_rec_i.get("BEGIN"):
             L_REC_0.append(P_rec_i)
             P_rec_i["total_count"] += 1
             time_vector_i.append(0)
-        if(P_rec_i["DT"] > 0):
+        if P_rec_i.get("DT",0) > 0:
             L_REC.append(P_rec_i)
             P_rec_i["total_count"] += int(T_max/P_rec_i["DT"])
             time_vector_i.extend(   np.arange(1,int(T_max/P_rec_i["DT"])+1,P_rec_i["DT"]).tolist())
-        
         P_rec_i["time_vector"] = np.array(time_vector_i)
         
         if P_rec_i["total_count"] > 0:
@@ -82,11 +69,20 @@ def init_recording(P_record, T_max, P_network = {}):
             if P_rec_i["func"] == "ALL" or P_rec_i["func"] == "ALL_int":
                 P_rec_i["N_values"] = kit.init_graph(P_network)[0].vcount()
 
+    return L_REC_0, L_REC, L_REC_1      # list of recordings at the beginning of the simulation, during the simulation, and at the end of the simulation
+
+def init_results(P_record):
+    #where all results will be saved:
+    results = Results()
+
+    for i in range(P_record["N"]):
+        P_rec_i = P_record["Recording_" + str(i)]
+
+        if P_rec_i["total_count"] > 0:
+            # if at least one of the conditions is satisfied, initialize the results for single variable
             setattr(results, P_rec_i["column_name"], SingleVariable_Results(P_rec_i))
 
-    return L_REC_0, L_REC, L_REC_1, results      # list of recordings at the beginning of the simulation, during the simulation, and at the end of the simulation
-
-
+    return results
 
 def single_save(G, P_rec_i, results, global_var, internal_tick = -10):
     #writes values to the Results object
@@ -100,7 +96,8 @@ def single_save(G, P_rec_i, results, global_var, internal_tick = -10):
     RES = statistic_function(G, P_rec_i, global_var)
     col_name  = P_rec_i["column_name"]
 
-    idx = (internal_tick  +   (P_rec_i["END"]==True))   *  (1 - (internal_tick == -1))
+    #idx = (internal_tick  +   (P_rec_i["END"]==True))   *  (1 - (internal_tick == -1))
+    idx = (internal_tick  +   P_rec_i.get("END",False))   *  (1 - (internal_tick == -1))
     getattr(results,col_name).data[idx,:] = RES             # RES  is saved in position idx of results.name.data
 
 def batch_save(G, P_rec_i, results, global_var, internal_tick = -10, T=500):
@@ -116,18 +113,25 @@ def batch_save(G, P_rec_i, results, global_var, internal_tick = -10, T=500):
     col_name  = P_rec_i["column_name"]
     
     next_internal_tick = (internal_tick // P_rec_i["DT"])*P_rec_i["DT"] + P_rec_i["DT"]
-    idx = (next_internal_tick  +   (P_rec_i["END"]==True))
+    idx = (next_internal_tick  +   (P_rec_i.get("END")==True))
     
     if type(RES) == list:
         getattr(results,col_name).data[idx:] = [RES for _ in np.arange(next_internal_tick,T+1,P_rec_i["DT"])]            # RES  is saved in all subsequent positions of results.name.data
-        if P_rec_i["END"] == True:
+        if P_rec_i.get("END") == True:
             getattr(results,col_name).data[0] = [RES]
     else:    
         getattr(results,col_name).data[idx:] = RES             # RES  is saved in all subsequent positions of results.name.data
-        if P_rec_i["END"] == True:
+        if P_rec_i.get("END") == True:
             getattr(results,col_name).data[0] = RES
 
-                                                                                                                                                                                    
+def convert_results_to_float(results):
+    """this function goes through all the attributes of results, and converts the arg.data into a np.float64 array"""
+    attrs = [a for a in dir(results) if not a.startswith('_')]
+    for attr in attrs:
+        if(type(getattr(results, attr)) == np.ndarray):
+            setattr(results, attr, getattr(results, attr).astype(getattr(results, attr)[0].dtype))
+
+                                                                                                                                                                                 
 #   ████    ██████     ██     ██████    ████     ████    ██████    ████     ████     ████  
 #  ██  ██     ██      ████      ██       ██     ██  ██     ██       ██     ██  ██   ██  ██ 
 #  ██         ██     ██  ██     ██       ██     ██         ██       ██     ██       ██     
