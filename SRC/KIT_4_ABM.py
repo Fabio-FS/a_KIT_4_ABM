@@ -42,7 +42,7 @@ def reset_param(P_net_original,P_sim_original,P_dyn_original,P_rec_original):
     P_rec = deepcopy(P_rec_original)
     return P_net, P_sim, P_dyn, P_rec
 
-def run_sim(P_network, P_dynamic, P_simulations, P_record, return_G = False):
+def run_sim(P_network, P_dynamic, P_simulations, P_record, initialized_recording = None, return_G = False):
     #initialize the graph, read in all simulation rules, simulate and return data
 
     # initialize the graph creating all the needed layers. for each layer create the network
@@ -56,7 +56,7 @@ def run_sim(P_network, P_dynamic, P_simulations, P_record, return_G = False):
     # initializes the dynamic on the graph and returns a list of rules for the updating function.
     list_of_rules = init_rules(Graphs, P_dynamic,global_var)
     
-    Data = simulate_and_return_data(Graphs, list_of_rules, P_simulations, P_record,global_var, P_network)
+    Data = simulate_and_return_data(Graphs, list_of_rules, P_simulations, P_record,global_var, P_network = P_network, initialized_recording = initialized_recording)
 
     if return_G:
         return Data, Graphs
@@ -95,26 +95,30 @@ def init_rules(G,P_dyn,global_var):
 
     return LotR # list of rules
 
-def simulate_and_return_data(Graphs, list_of_rules, P_simulations, P_record,global_var, P_network = {}):
+def simulate_and_return_data(Graphs, list_of_rules, P_simulations, P_record,global_var, P_network = {}, initialized_recording = None):
     #with graph and rules initialized, simulate and return data
 
-    # G is the list of graph-layers, each item is one graph
-    # list_of_rules is a list of dictionaries, each containing parameters for one updating function
-    # P_record is the dictionary with the parameters for recording
+    #    G    is the list of graph-layers, each item is one graph
+    #    list_of_rules    is a list of dictionaries, each containing parameters for one updating function
+    #    P_record    is the dictionary with the parameters for recording
 
-    np.set_printoptions(threshold=sys.maxsize)
-    #necessary for networks with >999 agents.
-    #otherwise numpy prints every array as [y_0, y_1, ..., y_n]
-
-    L_REC_0, L_REC, L_REC_1, results = init_recording(P_record, P_simulations["T"], P_network)
-    # L_REC_0 is the list of recordings to be done BEFORE the simulations begin
-    # L_REC is the list of recordings to be done DURING the simulations
-    # L_REC_1 is the list of recordings to be done AFTER the simulations end
-    #results is where all results will be stored
+    if initialized_recording == None:
+        L_REC_begin, L_REC_during, L_REC_after = init_recording(P_record, P_simulations["T"], P_network)
+        # L_REC_0 is the list of recordings to be done BEFORE the simulations begin
+        # L_REC is the list of recordings to be done DURING the simulations
+        # L_REC_1 is the list of recordings to be done AFTER the simulations end
+        #results is where all results will be stored
+    else:
+        #record_init allows to initialize everything outside of simulation - and skip doing it all over again here
+        #for saving to h5 you need to know the shape of everything beforehand, and init_recording finds out that information
+        # also useful when doing multiple trials or parameter sweeps:  all L_REC lists stay the same
+        L_REC_begin, L_REC_during, L_REC_after = initialized_recording
+    results = init_results(P_record)
+    #results need to be initialized for every trial so the old ones are deleted
 
     global_var.current_timestep = 0
     # save the state of the system BEFORE the simulations begins
-    for P_rec_i in L_REC_0:
+    for P_rec_i in L_REC_begin:
         #P_rec_i contains all parameters for saving one single variable before the simulation
         single_save(Graphs, P_rec_i, results, global_var, internal_tick = 0)     # 0 means that the time step is before the simulations begin
         #writes data to              results
@@ -129,19 +133,19 @@ def simulate_and_return_data(Graphs, list_of_rules, P_simulations, P_record,glob
         
             # save the state of the system DURING the simulation
             # with the possibility to save the state every N steps via P_rec_i["DT"]
-            for P_rec_i in L_REC:
+            for P_rec_i in L_REC_during:
                 if(internal_tick%P_rec_i["DT"] == 0):
                     single_save(Graphs, P_rec_i, results, global_var, internal_tick = internal_tick)
                     #writes data to              results
 
         if global_var.stop_condition:
-            for P_rec_i in L_REC:
+            for P_rec_i in L_REC_during:
                 batch_save(Graphs, P_rec_i,results, global_var, internal_tick = internal_tick, T = P_simulations["T"])
                 #writes lots of data to    results
             break
 
     # save the state of the system AFTER the simulations end
-    for P_rec_i in L_REC_1:
+    for P_rec_i in L_REC_after:
         single_save(Graphs, P_rec_i, results, global_var, internal_tick = -1)     # -1 means that the time step is after the simulations end
         #writes data to              results
 
