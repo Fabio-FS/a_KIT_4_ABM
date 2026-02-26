@@ -100,6 +100,7 @@ def create_h5(P_record):
         #needed for live monitoring.
         #in swmr mode, multiple processes can read 
 
+        #create a dataset for sweep_codes
         total_sweep_steps = 1
         if not P_record.get("sweep_codes") is None:
             f.create_dataset(
