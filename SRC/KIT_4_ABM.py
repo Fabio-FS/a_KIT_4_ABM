@@ -20,6 +20,13 @@ class Global_Vars:
     def __init__(self):
         self.stop_condition = False
 
+#  █████      ██     █████      ██     ██   ██  ██████   ██████   ██████   █████     ████   
+#  ██  ██    ████    ██  ██    ████    ███ ███  ██         ██     ██       ██  ██   ██  ██  
+#  ██  ██   ██  ██   ██  ██   ██  ██   ███████  ██         ██     ██       ██  ██   ██      
+#  █████    ██████   █████    ██████   ██ █ ██  ████       ██     ████     █████     ████   
+#  ██       ██  ██   ████     ██  ██   ██   ██  ██         ██     ██       ████         ██  
+#  ██       ██  ██   ██ ██    ██  ██   ██   ██  ██         ██     ██       ██ ██    ██  ██  
+#  ██       ██  ██   ██  ██   ██  ██   ██   ██  ██████     ██     ██████   ██  ██    ████   
 
 def import_parameters(namefile):
     # namefile is a json file in the JSON format.
@@ -42,35 +49,17 @@ def reset_param(P_net_original,P_sim_original,P_dyn_original,P_rec_original):
     P_rec = deepcopy(P_rec_original)
     return P_net, P_sim, P_dyn, P_rec
 
-def run_sim(P_network, P_dynamic, P_simulations, P_record, initialized_recording = None, return_G = False):
-    #initialize the graph, read in all simulation rules, simulate and return data
+  
+#  ██  ██   █████    ████       ██     ██████   ██████  
+#  ██  ██   ██  ██   ██ ██     ████      ██     ██      
+#  ██  ██   ██  ██   ██  ██   ██  ██     ██     ██      
+#  ██  ██   █████    ██  ██   ██████     ██     ████    
+#  ██  ██   ██       ██  ██   ██  ██     ██     ██      
+#  ██  ██   ██       ██ ██    ██  ██     ██     ██      
+#   ████    ██       ████     ██  ██     ██     ██████  
+#                                                                                                                                                    
 
-    # initialize the graph creating all the needed layers. for each layer create the network
-    Graphs = init_graph(P_network) # G is a list of graphs.
-
-    global_var = Global_Vars()
-    #global_var contains variables that all functions should have access to in principle
-    global_var.functions = Global_Vars()
-    #global_var.functions will contain functions I want to have
-
-    # initializes the dynamic on the graph and returns a list of rules for the updating function.
-    list_of_rules = init_rules(Graphs, P_dynamic,global_var)
-    
-    Data = simulate_and_return_data(Graphs, list_of_rules, P_simulations, P_record,global_var, P_network = P_network, initialized_recording = initialized_recording)
-
-    if return_G:
-        return Data, Graphs
-    return Data
-
-
-#  ██ ███    ███ ██████  ██████  ██ ███    ██ ████████     ██████  ██    ██ ██      ███████ ███████ 
-#  ██ ████  ████ ██   ██ ██   ██ ██ ████   ██    ██        ██   ██ ██    ██ ██      ██      ██      
-#  ██ ██ ████ ██ ██████  ██████  ██ ██ ██  ██    ██        ██████  ██    ██ ██      █████   ███████ 
-#  ██ ██  ██  ██ ██      ██   ██ ██ ██  ██ ██    ██        ██   ██ ██    ██ ██      ██           ██ 
-#  ██ ██      ██ ██      ██   ██ ██ ██   ████    ██        ██   ██  ██████  ███████ ███████ ███████ 
-#                                                                                                   
-
-def init_rules(G,P_dyn,global_var):
+def init_update_rules(G,P_dyn,global_var):
 
     LotR = [] # list of the rules
     for i in range(P_dyn["N"]):
@@ -95,19 +84,48 @@ def init_rules(G,P_dyn,global_var):
 
     return LotR # list of rules
 
-def simulate_and_return_data(Graphs, list_of_rules, P_simulations, P_record,global_var, P_network = {}, initialized_recording = None):
-    #with graph and rules initialized, simulate and return data
 
-    #    G    is the list of graph-layers, each item is one graph
-    #    list_of_rules    is a list of dictionaries, each containing parameters for one updating function
-    #    P_record    is the dictionary with the parameters for recording
+def single_update(G, P_rule, global_var = Global_Vars()):
+    update_fct_name = P_rule["func"]
 
+    try:
+        update_fct = update_fct_dict[update_fct_name]
+    except KeyError:
+        print(f"Invalid update function key: {update_fct_name}")
+        suggestion = get_close_matches(update_fct_name, update_fct_dict.keys(), n=1)
+        if suggestion:
+            print(f"Did you mean {suggestion[0]} ?")
+
+    update_fct(G, P_rule, global_var)  # Call the function
+
+
+#  █████    ██  ██   ██  ██             ████     ████    ██   ██ 
+#  ██  ██   ██  ██   ███ ██            ██  ██     ██     ███ ███ 
+#  ██  ██   ██  ██   ██████            ██         ██     ███████ 
+#  █████    ██  ██   ██████             ████      ██     ██ █ ██ 
+#  ████     ██  ██   ██ ███                ██     ██     ██   ██ 
+#  ██ ██    ██  ██   ██  ██            ██  ██     ██     ██   ██ 
+#  ██  ██    ████    ██  ██             ████     ████    ██   ██ 
+
+
+def run_sim(P_network, P_dynamic, P_simulations, P_record, initialized_recording = None, return_G = False):
+    #initialize the graph, read in all simulation rules, simulate and return data
+
+    # initialize the graph creating all the needed layers. for each layer create the network
+    Graphs = init_graph(P_network) # G is a list of graphs.
+
+    #initialize the container object global_var
+    global_var = Global_Vars()
+    #global_var contains variables that all functions should have access to in principle
+    global_var.functions = Global_Vars()
+    #global_var.functions will contain functions I want to have
+
+    # initialize the dynamic on the graph and return a list of rules for the updating function.
+    update_rules = init_update_rules(Graphs, P_dynamic,global_var)
+
+    #initialize the results object and if necessary the recording lists
     if initialized_recording == None:
         L_REC_begin, L_REC_during, L_REC_after = init_recording(P_record, P_simulations["T"], P_network)
-        # L_REC_0 is the list of recordings to be done BEFORE the simulations begin
-        # L_REC is the list of recordings to be done DURING the simulations
-        # L_REC_1 is the list of recordings to be done AFTER the simulations end
-        #results is where all results will be stored
     else:
         #record_init allows to initialize everything outside of simulation - and skip doing it all over again here
         #for saving to h5 you need to know the shape of everything beforehand, and init_recording finds out that information
@@ -123,12 +141,13 @@ def simulate_and_return_data(Graphs, list_of_rules, P_simulations, P_record,glob
         single_save(Graphs, P_rec_i, results, global_var, internal_tick = 0)     # 0 means that the time step is before the simulations begin
         #writes data to              results
 
+    #simulate
     for internal_tick in range(1,P_simulations["T"]+1):
         global_var.current_timestep = internal_tick
 
         if not global_var.stop_condition:
             # for each time step, advance the simulation one increment
-            for P_rule in list_of_rules:
+            for P_rule in update_rules:
                 single_update(Graphs, P_rule, global_var)
         
             # save the state of the system DURING the simulation
@@ -149,33 +168,14 @@ def simulate_and_return_data(Graphs, list_of_rules, P_simulations, P_record,glob
         single_save(Graphs, P_rec_i, results, global_var, internal_tick = -1)     # -1 means that the time step is after the simulations end
         #writes data to              results
 
+    convert_results_to_float(results)    
 
-    convert_results_to_float(results)
-
+    if return_G:
+        return results, Graphs
     return results
 
 
-def convert_results_to_float(results):
-    """this function goes through all the attributes of results, and converts the arg.data into a np.float64 array"""
-    attrs = [a for a in dir(results) if not a.startswith('_')]
-    for attr in attrs:
-        if(type(getattr(results, attr)) == np.ndarray):
-            setattr(results, attr, getattr(results, attr).astype(getattr(results, attr)[0].dtype))
 
-
-
-def single_update(G, P_rule, global_var = Global_Vars()):
-    update_fct_name = P_rule["func"]
-
-    try:
-        update_fct = update_fct_dict[update_fct_name]
-    except KeyError:
-        print(f"Invalid update function key: {update_fct_name}")
-        suggestion = get_close_matches(update_fct_name, update_fct_dict.keys(), n=1)
-        if suggestion:
-            print(f"Did you mean {suggestion[0]} ?")
-
-    update_fct(G, P_rule, global_var)  # Call the function
 
 
 
