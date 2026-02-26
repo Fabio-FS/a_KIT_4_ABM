@@ -203,7 +203,58 @@ def update_upw_dow(G,rule, global_var):
 
     global_var.I_peak = max(global_var.I_peak  ,  float(np.mean(health_status==2)))
 
+def update_upw_dow_health_fixed(G,rule, global_var):
+
+    """this simulates an SIR model
+    the behavior model is either an upwards or downwards sloping IRF
+    herding vs contrarianism
+
+    Each agent can either protect or not.
+    They base their decision on:    1. own previous decision
+                                    2. neighbor's previous decision
+                                    3. global infected
+
+    The parameter mu controls how much agents weigh their own behavior versus the social influence.
+    If mu is one agents are only influenced by others, if mu is one agents don't stick to their behavior
+
+    G is the list of graphs-layers,
+    layer is the layer where the dynamic is imprinted.
+    All the values needed for the simulation are already imprinted in the graph G[layer] and in rule
+    """
+
+    beta0 = rule["beta0"]
+    mu = rule["mu"]
+    a_B = rule["a_B"]
+    a_Ni = rule["a_Ni"]
+    BG_thr = rule["BG_thr"]
+    Ni_thr = rule["Ni_thr"]
+    Bi_thr = rule["Bi_thr"]
+    max_behavior = rule["max_behavior"]
+
+    health_status = global_var.health_status
+    behaviors = global_var.behavior
+
+    # check if there are infected nodes, if not the health update will be skipped
+    N_infected = np.sum( health_status == 2)
+    if N_infected == 0:
+        N_protecting = np.sum(behaviors == 1)   #check if there are protecting nodes, if not, everything will be skipped
+        if N_protecting == 0:
+            global_var.stop_condition = True
+            #no return here.
+            #batch saving is triggered in the following timestep
+
+    #------------------------------------------------------------------------------------------------------------------------------#
+    #first: calculate update of protection probability
+
+    probability = global_var.functions.calc_protection_probability(behaviors, N_infected, global_var,
+                                a_B = a_B, a_Ni = a_Ni, mu = mu,
+                                theta = Ni_thr, Bi_thr = Bi_thr, BG_thr = BG_thr)
     
+    #------------------------------------------------------------------------------------------------------------------------------#
+    #second: update the betas
+
+    global_var.behavior, global_var.beta = update_beta(probability, N_infected, max_behavior, beta0, global_var.N_nodes_H)
+
 #  ████     ████     ████   
 # ██  ██     ██     ██  ██  
 # ██         ██     ██      
@@ -360,8 +411,7 @@ def update_upw_dow_mov(G,rule, global_var):
 
     global_var.behavior, global_var.beta = update_beta(probability, N_infected, max_behavior, beta0, global_var.N_nodes_H)
 
- 
-
+  
 # ██  ██   ██████     ██     ██  ██    ████     ████     ████    ████     ██████  
 # ██  ██   ██        ████    ██  ██     ██     ██  ██     ██     ██ ██    ██      
 # ██  ██   ██       ██  ██   ██  ██     ██     ██         ██     ██  ██   ██      
@@ -523,7 +573,6 @@ def update_downward_Heav(G,rule, global_var):
 
         global_var.I_peak = max(global_var.I_peak  ,  float(np.mean(health_status==2)))
 
-
 #  ████    ██  ██    ████    ██████  
 #   ██     ███ ██     ██       ██    
 #   ██     ██████     ██       ██    
@@ -648,7 +697,6 @@ def init_mix_3_populations(P_dyn, G, global_var):
     global_var.actual_health_behavior = global_var.behavior
 
     return rule
-
 
 
 def init_upw_dow(P_dyn, G,global_var):
