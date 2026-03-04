@@ -273,6 +273,13 @@ def calc_homophily_recentered_wrapper(G,P_rec, global_var = None):
     return RES
 
 def calc_homophily_non_recentered_wrapper(G,P_rec, global_var = None):
+    if P_rec.get("source",None) == "global_var":
+        return calc_homophily(g = G[P_rec["layer"]],
+                              attribute = getattr(global_var,P_rec["attribute"]),
+                              recenter_flag = 0,
+                              quantity_scaling = P_rec["quantity_scaling"],
+                              is_category = P_rec["is_category"]
+                            )
     RES = float(calc_homophily(G[P_rec["layer"]], P_rec["attribute"], recenter_flag = 2, quantity_scaling = P_rec["quantity_scaling"], is_category = P_rec["is_category"]))
     return RES
 
