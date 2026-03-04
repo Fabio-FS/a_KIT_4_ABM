@@ -73,7 +73,6 @@ def update_upw_dow(G,rule, global_var):
     #third: calculate and carry out update of health status
 
     global_var.health_status = update_health_SIR(N_infected, global_var)
-    g_h.vs["health_status"] = health_status.tolist()
     #writing the health status to nodes, because I still use that when saving
 
     global_var.I_peak = max(global_var.I_peak  ,  float(np.mean(health_status==2)))
