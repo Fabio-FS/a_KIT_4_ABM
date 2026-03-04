@@ -1,6 +1,7 @@
 import sys
 sys.path.append('..')
 from utilities.IC import *
+from utilities.model_helpers import *
 
 def update_static(G,rule, global_var):
 
