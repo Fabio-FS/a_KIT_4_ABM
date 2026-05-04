@@ -116,9 +116,9 @@ def run_sim(P_network, P_dynamic, P_simulations, P_record, initialized_recording
 
     #initialize the container object global_var
     global_var = Global_Vars()
-    #global_var contains variables that all functions should have access to in principle
+    #global_var contains variables that should be available everywhere
     global_var.functions = Global_Vars()
-    #global_var.functions will contain functions I want to have
+    #global_var.functions contains fucntions that should be available everywhere
 
     # initialize the dynamic on the graph and return a list of rules for the updating function.
     update_rules = init_update_rules(Graphs, P_dynamic,global_var)
@@ -127,10 +127,11 @@ def run_sim(P_network, P_dynamic, P_simulations, P_record, initialized_recording
     if initialized_recording == None:
         L_REC_begin, L_REC_during, L_REC_after = init_recording(P_record, P_simulations["T"], P_network)
     else:
-        #record_init allows to initialize everything outside of simulation - and skip doing it all over again here
+        #initialized_recording allows to initialize everything outside of simulation - and skip doing it all over again here
         #for saving to h5 you need to know the shape of everything beforehand, and init_recording finds out that information
         # also useful when doing multiple trials or parameter sweeps:  all L_REC lists stay the same
         L_REC_begin, L_REC_during, L_REC_after = initialized_recording
+
     results = init_results(P_record)
     #results need to be initialized for every trial so the old ones are deleted
 
