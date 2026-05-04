@@ -25,13 +25,13 @@ def calc_protection_probability_regular(behaviors, N_infected, global_var,
                     - a_B * (1-mu) * (behaviors      - Bi_thr)
                     - a_Ni*          (N_infected/global_var.N_nodes_H - theta))
     
-    exponent[global_var.herder_idcs] = exponent_upw[global_var.herder_idcs]
+    exponent[global_var.aligner_idcs] = exponent_upw[global_var.aligner_idcs]
     exponent[global_var.contrarian_idcs] = exponent_dow[global_var.contrarian_idcs]
     #implicitly having the exponent for the remaining indices =0
     #I overwrite the result of this exponent two lines beneath in the probability vector
 
     probability = 1 / (1 + np.exp( exponent ) )
-    probability[global_var.remaining_idcs] = global_var.static_probability
+    probability[global_var.static_idcs] = global_var.static_probability
 
     return probability
 
@@ -52,13 +52,13 @@ def calc_protection_probability_irregular(behaviors, N_infected, global_var,
                     - a_B * (1-mu) * (behaviors      - Bi_thr)
                     - a_Ni*          (N_infected/global_var.N_nodes_H - theta))
     
-    exponent[global_var.herder_idcs] = exponent_upw[global_var.herder_idcs]
+    exponent[global_var.aligner_idcs] = exponent_upw[global_var.aligner_idcs]
     exponent[global_var.contrarian_idcs] = exponent_dow[global_var.contrarian_idcs]
     #implicitly having the exponent for the remaining indices =0
     #I overwrite the result of this exponent two lines beneath in the probability vector
 
     probability = 1 / (1 + np.exp( exponent ) )
-    probability[global_var.remaining_idcs] = global_var.static_probability
+    probability[global_var.static_idcs] = global_var.static_probability
 
     return probability
 

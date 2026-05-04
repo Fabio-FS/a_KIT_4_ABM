@@ -512,8 +512,8 @@ def init_mix_3_populations(P_dyn, G, global_var):
 
     #assigning all vertices an IRF group.
     remaining_idcs = np.array(range(G[bl].vcount()))
-    herder_idcs = np.random.choice(G[bl].vcount(),size=int(round(share_herders*G[bl].vcount())),replace=False)
-    remaining_idcs = np.setdiff1d(remaining_idcs, herder_idcs)
+    aligner_idcs = np.random.choice(G[bl].vcount(),size=int(round(share_herders*G[bl].vcount())),replace=False)
+    remaining_idcs = np.setdiff1d(remaining_idcs, aligner_idcs)
     if remaining_idcs.shape[0] != 0 and share_contrarians != 0:
         if share_static == 0:
             #share_contrarians is >0 , share_static is zero.
@@ -538,9 +538,9 @@ def init_mix_3_populations(P_dyn, G, global_var):
                               global_var = global_var)
     
     #after potentially homophilously distriubting the attribute, write the indices to global_var
-    global_var.herder_idcs = np.where(global_var.IRF_group == 0)[0]
+    global_var.aligner_idcs = np.where(global_var.IRF_group == 0)[0]
     global_var.contrarian_idcs = np.where(global_var.IRF_group == 1)[0]
-    global_var.remaining_idcs = np.where(global_var.IRF_group == 2)[0]
+    global_var.static_idcs = np.where(global_var.IRF_group == 2)[0]
         
     global_var.static_probability = P_dyn["BEHAVIOR"]["static_probability"]
     global_var.probability = np.where(global_var.IRF_group == 2, global_var.static_probability, 0)
@@ -606,22 +606,22 @@ def init_upw_dow(P_dyn, G,global_var):
     global_var.I_peak = 0
 
     if "UPW" in P_dyn["func"]:
-        global_var.herder_idcs = range(global_var.N_nodes_B)
+        global_var.aligner_idcs = range(global_var.N_nodes_B)
         global_var.contrarian_idcs = []
-        global_var.remaining_idcs = []
+        global_var.static_idcs = []
         global_var.IRF_group = np.zeros(shape = G[bl].vcount())
 
         G[bl].vs["herder"] = True
     else:
         G[bl].vs["herder"] = False
-        global_var.herder_idcs = []
+        global_var.aligner_idcs = []
         global_var.contrarian_idcs = range(global_var.N_nodes_B)
-        global_var.remaining_idcs = []
+        global_var.static_idcs = []
         global_var.IRF_group = np.ones(shape = G[bl].vcount())
         
-    G[bl].vs[global_var.herder_idcs]["IRF_group"] = 0
+    G[bl].vs[global_var.aligner_idcs]["IRF_group"] = 0
     G[bl].vs[global_var.contrarian_idcs]["IRF_group"] = 1
-    G[bl].vs[global_var.remaining_idcs]["IRF_group"] = 2
+    G[bl].vs[global_var.static_idcs]["IRF_group"] = 2
 
     global_var.static_probability = P_dyn["BEHAVIOR"].get("static_probability",None)
 
