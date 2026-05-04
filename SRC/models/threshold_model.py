@@ -573,6 +573,147 @@ def init_mix_3_populations(P_dyn, G, global_var):
     return rule
 
 
+def init_vignette(P_dyn, G, global_var):
+
+    global_var.first_tick = True
+    global_var.P_dyn = P_dyn
+
+    hl = P_dyn["HEALTH"]["layer"]       # layer where the the health status is imprinted
+    bl = P_dyn["BEHAVIOR"]["layer"]     # layer where the behavior is imprinted
+
+    global_var.b_neighbors = [np.array(G[bl].neighbors(i)) for i in range(G[bl].vcount())]
+    global_var.B_neighbor_indexing = np.array(global_var.b_neighbors) if is_regular(G[bl]) else None
+    global_var.h_neighbors = [np.array(G[hl].neighbors(i)) for i in range(G[hl].vcount())]
+    global_var.functions.row_mean_B = [row_mean_ragged,row_mean_fast][is_regular(G[bl])]
+    global_var.functions.row_mean_H = [row_mean_ragged,row_mean_fast][is_regular(G[hl])]
+    global_var.functions.calc_protection_probability = [calc_protection_probability_irregular,calc_protection_probability_regular][is_regular(G[bl])]
+    global_var.N_nodes_B = G[bl].vcount()
+    global_var.N_nodes_H = G[hl].vcount()
+
+    global_var.I2R  = P_dyn["HEALTH"]["I2R"]                                                       # for each node sets the gamma
+
+    # for each node sets the initial condition
+    set_disease_initial_condition(P_dyn["HEALTH"]["IC"], "health_status", G[hl])
+    G[hl].vs["next_health"] = G[hl].vs["health_status"]
+    global_var.health_status = np.array(G[hl].vs["health_status"])
+    G[bl].vs["beta"] = [P_dyn["HEALTH"]["beta0"]]*len(G[bl].vs) #  list(np.full( shape=len(G[bl].vs), fill_value = beta0))
+    G[bl].vs["behavior"] = np.zeros( shape=len(G[bl].vs) )
+    G[bl].vs["next_beta"] = np.full( shape=len(G[bl].vs), fill_value = P_dyn["HEALTH"]["beta0"])
+    global_var.I_peak = 0
+
+    #calculating the size of each fraction in the population
+    size_herders =     int(round(P_dyn["BEHAVIOR"]["IC"].get("share_herders",0)  *  G[bl].vcount()))
+    size_contrarians = int(round(P_dyn["BEHAVIOR"]["IC"].get("share_contrarians",0)  *  G[bl].vcount()))
+    size_always =      int(round(P_dyn["BEHAVIOR"]["IC"].get("share_always",0)  *  G[bl].vcount()))
+    size_never =       int(round(P_dyn["BEHAVIOR"]["IC"].get("share_never",0)  *  G[bl].vcount()))
+    size_medium =      int(round(P_dyn["BEHAVIOR"]["IC"].get("share_static",0)  *  G[bl].vcount()))
+
+    size_accounted_for = size_contrarians + size_herders + size_medium + size_always + size_never
+    
+    #filling up to 100%, if possible
+    if size_accounted_for < G[bl].vcount():
+        size_unaccounted_for = G[bl].vcount() - size_accounted_for
+
+        if P_dyn["BEHAVIOR"]["IC"].get("undefined") == "static":
+            size_medium += size_unaccounted_for
+        elif P_dyn["BEHAVIOR"]["IC"].get("undefined") == "contrarians":      
+            size_contrarians += size_unaccounted_for
+        elif P_dyn["BEHAVIOR"]["IC"].get("undefined") == "herders":         
+            size_herders += size_unaccounted_for
+        elif P_dyn["BEHAVIOR"]["IC"].get("undefined") == "never":       
+            size_never += size_unaccounted_for
+        elif P_dyn["BEHAVIOR"]["IC"].get("undefined") == "always":       
+            size_always += size_unaccounted_for
+
+    elif size_accounted_for > G[bl].vcount():
+        print("fractions of agents are not adding up to one.")
+        exit()
+
+    #assigning all vertices an IRF group.
+    remaining_idcs = np.array(range(G[bl].vcount()))
+    aligner_idcs = np.random.choice(G[bl].vcount(),size= size_herders,replace=False)
+    remaining_idcs = np.setdiff1d(remaining_idcs, aligner_idcs)
+
+    contrarian_idcs = np.random.choice(remaining_idcs,size=size_contrarians,replace=False)
+    remaining_idcs = np.setdiff1d(remaining_idcs, contrarian_idcs)
+
+    medium_protection_idcs = np.random.choice(remaining_idcs,size=size_medium,replace=False)
+    remaining_idcs = np.setdiff1d(remaining_idcs, medium_protection_idcs)
+
+    always_protection_idcs = np.random.choice(remaining_idcs,size=size_always,replace=False)
+    remaining_idcs = np.setdiff1d(remaining_idcs, always_protection_idcs)
+
+    never_protection_idcs = remaining_idcs
+
+    #setting up the attribute that the Metropolis algorithm will distribute
+    global_var.IRF_group = np.zeros(shape=G[bl].vcount())
+    global_var.IRF_group[contrarian_idcs] = 1
+    global_var.IRF_group[medium_protection_idcs] = 2
+    global_var.IRF_group[always_protection_idcs] = 3
+    global_var.IRF_group[never_protection_idcs] = 4
+
+    #if homophily flag is True and the population is not homogeneous, RE-distribute the attribute "IRF_group"
+    if P_dyn["BEHAVIOR"]["IC"]["homophily"]["Flag"] == True:
+        if size_herders != G[bl].vcount() and size_contrarians != G[bl].vcount() and size_medium != G[bl].vcount() and size_always != G[bl].vcount() and size_never != G[bl].vcount():
+            #not doing calculations in homogeneous populations
+
+            set_initial_condition(P_dyn["BEHAVIOR"]["IC"],
+                                  attribute_vector = global_var.IRF_group,
+                                  g = G[bl],
+                                  global_var = global_var)
+
+    #after potentially homophilously distriubting the attribute, write the indices to global_var
+    global_var.aligner_idcs = np.where(global_var.IRF_group == 0)[0]
+    global_var.contrarian_idcs = np.where(global_var.IRF_group == 1)[0]
+    global_var.medium_idcs = np.where(global_var.IRF_group == 2)[0]
+    global_var.never_idcs = np.where(global_var.IRF_group == 4)[0]
+    global_var.always_idcs = np.where(global_var.IRF_group == 3)[0]
+    global_var.static_idcs = np.where(global_var.IRF_group > 1)[0]
+
+    global_var.static_probability = np.zeros(shape = G[bl].vcount())
+    global_var.static_probability[medium_protection_idcs] = np.clip(np.random.uniform(low = P_dyn["BEHAVIOR"]["static_probability_min"],
+                                                                                      high = P_dyn["BEHAVIOR"]["static_probability_max"],
+                                                                                      size = size_medium),
+                                                                    a_min = 0, a_max = 1)
+    global_var.static_probability[always_protection_idcs] = 1
+    #static_probability is now
+    #    zero for aligners and contrarians
+    #    zero for never protecters
+    #    one for always protectors
+    #    between 0 and 1 for medium protectors
+    
+    global_var.probability = global_var.static_probability
+    global_var.behavior = np.array(G[bl].vs["behavior"])
+
+    global_var.static_probability = global_var.static_probability[global_var.static_idcs]
+    #filtering out all aligners and contrarians
+
+    rule  = {
+        'func': P_dyn["func"],
+        'hl': hl,
+        'bl': bl,
+        'mu' : P_dyn["BEHAVIOR"]["mu"],
+        'beta0' : P_dyn["HEALTH"]["beta0"],
+        'a_B' : P_dyn["BEHAVIOR"]["a_B"],    
+        'a_Ni' : P_dyn["BEHAVIOR"]["a_Ni"],
+        'BG_thr' : P_dyn["BEHAVIOR"].get("BG_thr",P_dyn["BEHAVIOR"]["pn_thr"]),
+        'Bi_thr' : P_dyn["BEHAVIOR"]["Bi_thr"],
+        'Ni_thr' : P_dyn["BEHAVIOR"]["Ni_thr"],
+        'max_behavior' :  P_dyn["BEHAVIOR"]["max_behavior"]
+        }
+
+    if P_dyn["BEHAVIOR"]["IC"].get("equilibrium_flag",False):
+        equil_steps = P_dyn["BEHAVIOR"]["IC"].get("equil_steps",10)
+
+        for eq_step in range(equil_steps):
+            update_upw_dow_health_fixed(G,rule,global_var)
+            
+    G[bl].vs["behavior"] = global_var.behavior.tolist()
+    global_var.actual_health_behavior = global_var.behavior
+
+    return rule
+
+
 def init_upw_dow(P_dyn, G,global_var):
 
     global_var.first_tick = True
@@ -734,6 +875,8 @@ def init_model(update_fct_dict, init_fct_dict):
     #mixed populations
     init_fct_dict["mix_3"] = init_mix_3_populations
     update_fct_dict["mix_3"] = update_upw_dow
+    init_fct_dict["vignette"] = init_vignette
+    update_fct_dict["vignette"] = update_upw_dow
 
 
 
