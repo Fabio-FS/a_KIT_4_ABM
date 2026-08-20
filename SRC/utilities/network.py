@@ -2,11 +2,12 @@ import numpy as np
 import igraph as ig
 
 
-def n_simple_rewire(N,p, size = 1):
+def n_simple_rewire(n_edges,p, size = 1):
     # calculates what to put for   n   in g.rewire(n = ?, mode = "simple")   as to be consistent with the Watts-Strogatz algorithm
-    # this function affects exactly and determinstically    2*n    edges.
-    # In the Watts Strogatz model,  for   N    edges    and a rewiring probability   p   , on average p*N edges will be affected.
-    # The exact value comes from the probability distribution    binomial(N,p)
+    # the function g.rewire affects exactly and determinstically    2*n    edges.
+
+    # However, in the Watts Strogatz model,  for   N    edges    and a rewiring probability   p   , on average p*N edges will be affected.
+    # The exact value in each instance comes from the probability distribution    binomial(N,p)
     # The following formula captures the stochastic nature and is close to half the average of the above distribution.
     # close means: off by less than 0.25  (so the total number of affected edges is off by less than 0.5)
 
@@ -14,7 +15,7 @@ def n_simple_rewire(N,p, size = 1):
     #p:     rewiring probability
     #size:  how many values to generate
 
-    return (    0.5* np.random.binomial ( n = N, p=p, size = size )            ).astype(int)
+    return (    0.5* np.random.binomial ( n = n_edges, p=p, size = size )            ).astype(int)
 
 def MooreLattice_adjacency(Lx,Ly,circular):
     #a lattice with Moore neighborhood, i.e. 8 neighbors
@@ -90,6 +91,84 @@ def MooreLattice_adjacency(Lx,Ly,circular):
     return A
 
 
+def MS_rewire(g, g0, dim, p_rewire, size = (10,10), max_steps = 3000):
+    #this function rewires a graph randomly.
+    #while preserving the degree distribution
+    #this is achieved by using a Maslov-Sneppen-inspired rewiring algorithm
+    #Borrowing from Watts-Strogatz, we define a fixed and a loose end for each edge.
+    #When rewiring, the fixed end of edge A will be wired to the loose end of edge B and vice versa
+    #Fixed and loose ends are for now only determined for regular graphs: 1) circle networks and 2) Lattices with von Neumann or Moore neighborhood
+
+    N = g.vcount()
+    k = np.mean(g.degree())
+
+    #effective probability of rewiring           (in WS, rewiring to the same node is possible)
+    p_effective = p_rewire   *  ( (N-k-2) / (N-k-1) )
+
+    #how many edges should actually be rewired?
+    #WS is a stochastic process. Each edge will be rewired with probability p_effective
+    #the total number of edges rewired follows a binomial distribution
+    n_edges_rewired = (    np.random.binomial ( n = g.ecount(), p= p_effective, size = 1 )            ).astype(int)[0]
+    n_edges_remaining = g.ecount() - n_edges_rewired
+
+    #determining which end of each edge is fixed and which is open to rewiring
+    edges_unordered = np.array([e.tuple for e in g.es])
+    edges = np.zeros(edges_unordered.shape,dtype = int)
+
+    for i,e in enumerate(edges_unordered):
+        if dim == 1:
+            e_fix   =  min(e)  if  (min(e) - (max(e) - N))   >   (max(e) - min(e))  else  max(e)
+            e_loose =  min(e)  if  e_fix != min(e)                                  else  max(e)
+        elif dim == 2:
+            if (e[0]//size[0]) == (e[1]//size[0] + 1)%size[1]:
+                # e[0] is one line below e[1]
+                e_fix = e[1]
+                e_loose = e[0]
+            elif (e[1]//size[0]) == (e[0]//size[0] + 1)%size[1]:
+                # e[1] is one line below e[0]
+                e_fix = e[0]
+                e_loose = e[1]
+            elif e[0]%size[1] == (e[1] + 1)%size[1]:
+                #e[0] is to the right of e[1]
+                e_fix = e[1]
+                e_loose = e[0]                        
+            else:
+                e_fix = e[0]
+                e_loose = e[1]
+        else:
+            print("Rewiring not yet designed for graphs with dimensions above 2.")
+
+        edges[i] = np.array([e_fix,e_loose])
+
+    n_steps = 0
+    n_overlap = g.ecount()
+    while n_overlap > n_edges_remaining and n_steps < max_steps:
+        idcs = np.random.choice(g.ecount(), size = 2, replace = False)
+
+        if edges[idcs[0]][0] != edges[idcs[1]][1] and edges[idcs[1]][0] != edges[idcs[0]][1]:
+            #no self loops
+
+            nghbrs0 = g.neighbors(edges[idcs[0]][0])
+            nghbrs1 = g.neighbors(edges[idcs[1]][0])
+
+            if edges[idcs[1]][1] not in nghbrs0     or     ((edges[idcs[1]][1] in nghbrs0) and edges[idcs[1]][1] == edges[idcs[0]][1]) :
+                #new link is not neighbor                    new link IS neighbor          but       new link is equal to old link
+                #new node cannot be an existing neighbor, unless we cut the ties to it in the same step
+                if edges[idcs[0]][1] not in nghbrs1     or     ((edges[idcs[0]][1] in nghbrs1) and edges[idcs[1]][1] == edges[idcs[0]][1]) :
+                    #new link is not neighbor                    new link IS neighbor          but       new link is equal to old link
+                    #new node cannot be an existing neighbor, unless we cut the ties to it in the same step
+
+                    g.delete_edges([tuple(edges[idcs[0]]),tuple(edges[idcs[1]])])
+
+                    g.add_edges([(edges[idcs[0]][0],edges[idcs[1]][1]),(edges[idcs[1]][0],edges[idcs[0]][1] )])
+                    n_overlap = ig.intersection([g,g0]).ecount()
+
+                    edges[idcs[0]][1], edges[idcs[1]][1] = edges[idcs[1]][1], edges[idcs[0]][1]
+        n_steps += 1
+    return g
+
+
+
 # ██  ██   ██████   ██████   ██   ██   ████    █████    ██  ██  
 # ███ ██   ██         ██     ██   ██  ██  ██   ██  ██   ██ ██   
 # ██████   ██         ██     ██   ██  ██  ██   ██  ██   ████    
@@ -102,7 +181,7 @@ def MooreLattice_adjacency(Lx,Ly,circular):
 def init_graph(P_net):
     G = []
     for i in range(P_net["N_layers"]):
-        P_layer = P_net["Layer_" + str(i)]
+        P_layer = P_net[f"Layer_{i}"]
         N = P_net["N_nodes"]
 
         if(P_layer["type"] == "ER_m"):
@@ -127,8 +206,6 @@ def init_graph(P_net):
             A = MooreLattice_adjacency(P_layer["Lx"],P_layer["Ly"],P_layer.get("circular",False))
             g = ig.Graph.Adjacency(A, mode="undirected")
 
-            #Code to display all neighbors for each node, to check that the adj matrix is working
-
         elif(P_layer["type"] == "Moore_Lattice_WS_MS"):
             #a lattice with Moore neighborhood, i.e. 8 neighbors, then rewired Maslov-Sneppen-like
             #a Cellular automaton
@@ -136,22 +213,14 @@ def init_graph(P_net):
 
             A = MooreLattice_adjacency(P_layer["Lx"],P_layer["Ly"],P_layer.get("circular",False))
             g = ig.Graph.Adjacency(A, mode="undirected")
-            g.rewire(n = n_simple_rewire(N = g.ecount(), p=P_layer["P"]) , mode ="simple")
-            #g.rewire(n = 1):   two edges are picked and crosswired.
-            # e.g.  we pick the edges    0--312; 547--548
-            # we delete those edges and add either     0--547; 312--548     or    0--548; 312--547
-            # consistency with Watts-Strogatz definition:  there for 200 edges and p=5%  we want to rewire 10 edges.  that means we set n = 0.5 * 10 = 5
-            
+            g0 = ig.Graph.Adjacency(A, mode="undirected")
+
+            g = MS_rewire(g,g0,dim = 2, p_rewire = P_layer.get("p_rewire",0), size = (P_layer["Lx"],P_layer["Ly"]))
+
         elif(P_layer["type"] == "WS"):
             if(np.power(P_layer["L"],P_layer["D"]) != N):
                 print("GRAPH SIZE WARNING: L^D != N: " + str(np.power(P_layer["L"],P_layer["D"])) + " != " + str(N))
-            g = ig.Graph.Watts_Strogatz(dim=P_layer["D"], size=P_layer["L"], nei=P_layer["NFN"], p=P_layer["P"])
-        elif P_layer["type"] == "WS_MS":
-            #Watts-Strogatz network with Maslov-Sneppen-like rewiring
-            if(np.power(P_layer["L"],P_layer["D"]) != N):
-                print("GRAPH SIZE WARNING: L^D != N: " + str(np.power(P_layer["L"],P_layer["D"])) + " != " + str(N))
-            g = ig.Graph.Watts_Strogatz(dim=P_layer["D"], size=P_layer["L"], nei=P_layer["NFN"], p=0)
-            g.rewire(n = n_simple_rewire(N = g.ecount(), p=P_layer["P"]) , mode ="simple")
+            g = ig.Graph.Watts_Strogatz(dim=P_layer["D"], size=P_layer["L"], nei=P_layer["n_neighbors"], p=P_layer["p_rewire"])
         elif(P_layer["type"] == "kRRG"):
             g = ig.Graph.K_Regular(n = N, k = P_layer["k"])
         elif(P_layer["type"] == "BA"):
@@ -210,6 +279,13 @@ def init_graph(P_net):
             #ig.plot(g,target="sample_network.png",vertex_color=vertex_color)
             g.vs["membership"] = membership
             #print(g.vs["membership"])
+        elif (P_layer["type"] == "WS_MS"):
+            g = ig.Graph.Watts_Strogatz(dim=P_layer["D"], size=P_layer["L"], nei=P_layer["n_neighbors"], p=0)
+            g0 = ig.Graph.Watts_Strogatz(dim=P_layer["D"], size=P_layer["L"], nei=P_layer["n_neighbors"], p=0)
+
+            if P_layer["n_neighbors"] == 1 or P_layer["D"] == 1:
+                g = MS_rewire(g,g0,dim = P_layer["D"], p_rewire = P_layer.get("p_rewire",0))
+
         else:
             print("GRAPH: " + P_layer["type"] + " not implemented yet")
 
